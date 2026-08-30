@@ -34,11 +34,33 @@ created non-extractable with usages limited to `wrapKey`/`unwrapKey`. The
 browser then structurally prevents the key from being read out, even by our own
 code.
 
-**The passphrase verifier wraps a known constant.**
-Storing any hash derived from the passphrase would hand an attacker an
-offline-crackable target. Instead the server stores a fixed 32-byte value
-wrapped under the KEK; verifying means unwrapping it successfully, which
-requires the real key.
+**Content keys are wrapped under a vault key, not under the passphrase key.**
+The original design wrapped every content key directly under the
+passphrase-derived key. That made two things impossible: recovery (there was
+exactly one way in) and cheap rotation (changing a passphrase meant rewriting
+every key in the vault). A single indirection fixes both — one vault key wraps
+the content keys, and the vault key is itself wrapped once per way in.
+Changing a passphrase now re-wraps one key; ciphertext is never touched.
+
+**There is no passphrase verifier.**
+An earlier version stored a known constant wrapped under the passphrase key, to
+check a passphrase without learning it. Once content keys moved behind a vault
+key this became redundant: AES-KW is authenticated, so a wrong passphrase fails
+to unwrap the vault key. The wrapped vault key *is* the verifier, and the extra
+stored value was one more thing to get wrong.
+
+**The unlock endpoint is unauthenticated.**
+A returning user needs salts and wrapped keys before they can derive anything,
+so `/v1/identity/unlock/:id` cannot require a session. It is safe because it is
+inert: both wrapped keys are AES-KW protected under a 600,000-iteration
+derivation, so holding this response gets an attacker no further than holding
+the database does.
+
+**Recovery codes use Crockford base32.**
+No I, L, O or U — those are the characters people mistranscribe when copying a
+code off a printed page, which is exactly how this one travels. Input is
+normalised on the way back in, so typing O for 0 does not cost someone their
+vault.
 
 **Forget deletes the wrapped key before the object.**
 If the process dies between the two steps, the content is already
@@ -84,8 +106,12 @@ Connect. A signature is requested only when anchoring, never on page load.
 
 ## Verified in this implementation
 
-- Crypto envelope: 20 unit tests including tamper detection, IV reuse, key
+- Crypto envelope: unit tests including tamper detection, IV reuse, key
   rotation, and cryptographic forgetting.
+- Recovery: a vault written under one passphrase, that passphrase then
+  discarded entirely, restored from the recovery kit alone and re-locked under
+  a new phrase — proven both as a unit test and end to end against real
+  Postgres and object storage.
 - Full capture → save → open → delete → forget cycle against real Postgres and
   real S3-compatible storage, plus IDOR and consent-gate tests.
 - A plaintext canary written through the browser appears in **zero** of: API
@@ -109,8 +135,5 @@ Connect. A signature is requested only when anchoring, never on page load.
   Chrome extension driving this session disconnected before that could be run.
 - **Mobile (Expo).** Phase 4 in the blueprint.
 - **Anonymous social layer.** Deliberately out of MVP scope (§9.3).
-- **Key recovery beyond the passphrase.** Listed as an open decision in §29.2
-  and still open here; today, a lost passphrase means permanently lost content,
-  and the Privacy Centre says so plainly.
 - **Independent security review** before the program's upgrade authority is
   moved to a production signer.

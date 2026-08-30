@@ -5,9 +5,18 @@ import { KdfParams, WrappedKey } from './crypto.js';
 
 /* ---------------------------------------------------------------- identity */
 
+/** A vault key wrapped under one way of getting in. */
+export const WrappedVaultKey = z.object({ kdf: KdfParams, wrappedVaultKey: B64Url });
+export type WrappedVaultKey = z.infer<typeof WrappedVaultKey>;
+
+/**
+ * Registration carries two wrapped copies of the same vault key — one under
+ * the passphrase, one under the recovery code. The code itself never reaches
+ * us, so we can neither reissue it nor use it.
+ */
 export const RegisterGuestRequest = z.object({
-  kdf: KdfParams,
-  verifier: B64Url,
+  passphrase: WrappedVaultKey,
+  recovery: WrappedVaultKey,
 });
 export const RegisterGuestResponse = z.object({
   userId: OpaqueId,
@@ -15,8 +24,21 @@ export const RegisterGuestResponse = z.object({
   expiresAt: Iso8601,
 });
 
-export const LoginRequest = z.object({ userId: OpaqueId, verifier: B64Url });
+/**
+ * Unlocking happens entirely on the device: the client fetches the wrapped key,
+ * unwraps it locally, and only then asks for a session. The server never sees
+ * proof of the passphrase because it never needs one — every byte it holds is
+ * useless without the key the client just derived.
+ */
+export const LoginRequest = z.object({ userId: OpaqueId });
 export const LoginResponse = RegisterGuestResponse;
+
+/** Public unlock material. Useless without the passphrase or recovery code. */
+export const UnlockMaterialResponse = z.object({
+  passphrase: WrappedVaultKey,
+  recovery: WrappedVaultKey,
+  keyVersion: z.number().int().min(1),
+});
 
 export const SessionResponse = z.object({
   userId: OpaqueId,
@@ -24,6 +46,13 @@ export const SessionResponse = z.object({
   thoughtCount: z.number().int().nonnegative(),
   lastCaptureAt: Iso8601.nullable(),
 });
+
+/** Re-wrapping after a passphrase change or a reissued kit. */
+export const RotateVaultKeyRequest = z.object({
+  passphrase: WrappedVaultKey.optional(),
+  recovery: WrappedVaultKey.optional(),
+});
+export const RotateVaultKeyResponse = z.object({ updatedAt: Iso8601 });
 
 /* ------------------------------------------------------------ capture flow */
 

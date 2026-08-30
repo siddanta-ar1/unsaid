@@ -1,5 +1,5 @@
 {
-  "id": "1f3d4f5a-846b-48f8-aab6-b063636fed9e",
+  "id": "c8792b7c-01cb-413a-88d7-9f06fe403725",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -791,11 +791,42 @@
           "primaryKey": false,
           "notNull": true
         },
-        "verifier": {
-          "name": "verifier",
+        "wrapped_vault_key": {
+          "name": "wrapped_vault_key",
           "type": "text",
           "primaryKey": false,
           "notNull": true
+        },
+        "recovery_salt": {
+          "name": "recovery_salt",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "recovery_iterations": {
+          "name": "recovery_iterations",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "recovery_algorithm": {
+          "name": "recovery_algorithm",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "recovery_wrapped_vault_key": {
+          "name": "recovery_wrapped_vault_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "recovery_issued_at": {
+          "name": "recovery_issued_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
         },
         "key_version": {
           "name": "key_version",

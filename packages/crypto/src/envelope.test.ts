@@ -11,7 +11,7 @@ import {
   seal,
   sealText,
 } from './envelope.js';
-import { createVerifier, deriveKek, newKdfParams, verifyPassphrase } from './kek.js';
+import { deriveKek, newKdfParams } from './kek.js';
 import { encodeUtf8, fromBase64Url, toBase64Url } from './encoding.js';
 
 // PBKDF2 at 600k iterations is deliberately slow. Derive one KEK per suite and
@@ -127,25 +127,6 @@ describe('key rotation', () => {
     await expect(open(sealed.ciphertext, sealed.header, rewrapped, kek)).rejects.toThrow(
       DecryptionError,
     );
-  });
-});
-
-describe('passphrase verifier', () => {
-  it('accepts the right passphrase and rejects the wrong one', async () => {
-    const verifier = await createVerifier(kek);
-    expect(await verifyPassphrase(kek, verifier)).toBe(true);
-
-    const wrong = await deriveKek('wrong passphrase', params);
-    expect(await verifyPassphrase(wrong, verifier)).toBe(false);
-  });
-
-  it('does not embed the passphrase in the stored verifier', async () => {
-    const passphrase = 'VERIFIER_CANARY_7b21';
-    const localParams = newKdfParams();
-    const localKek = await deriveKek(passphrase, localParams);
-    const verifier = await createVerifier(localKek);
-    expect(verifier).not.toContain(passphrase);
-    expect(JSON.stringify(localParams)).not.toContain(passphrase);
   });
 });
 

@@ -36,11 +36,26 @@ export const users = pgTable(
      * the server ever holding an email address or the passphrase itself.
      */
     accountLookup: text('account_lookup').notNull(),
+
+    /*
+     * One vault key, wrapped once per way in. The server holds only wrapped
+     * copies: two locked boxes tell it nothing one would not have.
+     *
+     * No separate verifier column is needed — AES-KW is authenticated, so a
+     * wrong passphrase fails to unwrap. The wrapped key *is* the verifier.
+     */
     kdfSalt: text('kdf_salt').notNull(),
     kdfIterations: integer('kdf_iterations').notNull(),
     kdfAlgorithm: text('kdf_algorithm').notNull(),
-    /** Wrapped known-constant; proves a passphrase without revealing it. */
-    verifier: text('verifier').notNull(),
+    wrappedVaultKey: text('wrapped_vault_key').notNull(),
+
+    /** The recovery kit: a second wrapped copy of the same vault key. */
+    recoverySalt: text('recovery_salt').notNull(),
+    recoveryIterations: integer('recovery_iterations').notNull(),
+    recoveryAlgorithm: text('recovery_algorithm').notNull(),
+    recoveryWrappedVaultKey: text('recovery_wrapped_vault_key').notNull(),
+    recoveryIssuedAt: timestamp('recovery_issued_at', { withTimezone: true }).notNull().defaultNow(),
+
     keyVersion: smallint('key_version').notNull().default(1),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     lastSeenAt: timestamp('last_seen_at', { withTimezone: true }).notNull().defaultNow(),

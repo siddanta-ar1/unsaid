@@ -45,10 +45,14 @@ export const ThoughtWithKey = ThoughtMetadata.extend({
 });
 export type ThoughtWithKey = z.infer<typeof ThoughtWithKey>;
 
+/**
+ * How a vault key is stored for one way of getting in. There is no separate
+ * verifier: AES-KW is authenticated, so a wrong passphrase or recovery code
+ * simply fails to unwrap.
+ */
 export const VaultKeyMaterial = z.object({
   kdf: KdfParams,
-  /** KEK wrapped under itself-derived material; proves a passphrase is correct. */
-  verifier: B64Url,
+  wrappedVaultKey: B64Url,
   keyVersion: z.number().int().min(1),
 });
 export type VaultKeyMaterial = z.infer<typeof VaultKeyMaterial>;

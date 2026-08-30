@@ -93,7 +93,12 @@ CREATE TABLE "users" (
 	"kdf_salt" text NOT NULL,
 	"kdf_iterations" integer NOT NULL,
 	"kdf_algorithm" text NOT NULL,
-	"verifier" text NOT NULL,
+	"wrapped_vault_key" text NOT NULL,
+	"recovery_salt" text NOT NULL,
+	"recovery_iterations" integer NOT NULL,
+	"recovery_algorithm" text NOT NULL,
+	"recovery_wrapped_vault_key" text NOT NULL,
+	"recovery_issued_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"key_version" smallint DEFAULT 1 NOT NULL,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"last_seen_at" timestamp with time zone DEFAULT now() NOT NULL

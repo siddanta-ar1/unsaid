@@ -1,13 +1,14 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { FastifyInstance } from 'fastify';
 import {
+  changePassphrase,
   computeCommitment,
-  createVerifier,
-  deriveKek,
+  createVault,
   deriveThoughtSeed,
-  newKdfParams,
   openText,
   sealText,
+  unlockWithPassphrase,
+  unlockWithRecoveryCode,
 } from '@unsaid/crypto';
 import { buildApp } from '../src/app.js';
 import { getDatabase } from '../src/db/client.js';
@@ -30,20 +31,19 @@ let app: FastifyInstance;
 let token: string;
 let userId: string;
 let kek: CryptoKey;
-let keyVersion = 1;
+const keyVersion = 1;
 
 beforeAll(async () => {
   app = (await buildApp()) as unknown as FastifyInstance;
   await app.ready();
 
-  const params = newKdfParams();
-  kek = await deriveKek(PASSPHRASE, params);
-  const verifier = await createVerifier(kek);
+  const vault = await createVault(PASSPHRASE);
+  kek = vault.vaultKey;
 
   const res = await app.inject({
     method: 'POST',
     url: '/v1/identity/guest',
-    payload: { kdf: params, verifier },
+    payload: { passphrase: vault.passphrase, recovery: vault.recovery },
   });
   expect(res.statusCode).toBe(201);
   ({ token, userId } = res.json());
@@ -161,12 +161,11 @@ describe('authorization', () => {
   it('does not leak another user\'s thought (IDOR)', async () => {
     const { id } = await saveThought(`${MARKER} private to user one`);
 
-    const otherParams = newKdfParams();
-    const otherKek = await deriveKek('a different passphrase entirely', otherParams);
+    const otherVault = await createVault('a different passphrase entirely');
     const reg = await app.inject({
       method: 'POST',
       url: '/v1/identity/guest',
-      payload: { kdf: otherParams, verifier: await createVerifier(otherKek) },
+      payload: { passphrase: otherVault.passphrase, recovery: otherVault.recovery },
     });
     const other = reg.json();
 
@@ -359,12 +358,11 @@ describe('solana anchoring', () => {
   it('does not let another user anchor your thought', async () => {
     const { id } = await saveThought(`${MARKER} not yours to anchor`);
 
-    const otherParams = newKdfParams();
-    const otherKek = await deriveKek('a wholly different phrase', otherParams);
+    const otherVault = await createVault('a wholly different phrase');
     const reg = await app.inject({
       method: 'POST',
       url: '/v1/identity/guest',
-      payload: { kdf: otherParams, verifier: await createVerifier(otherKek) },
+      payload: { passphrase: otherVault.passphrase, recovery: otherVault.recovery },
     });
     const other = reg.json();
 
@@ -377,5 +375,110 @@ describe('solana anchoring', () => {
     expect(res.statusCode).toBe(404);
 
     await getDatabase().delete(users).where(eq(users.id, other.userId));
+  });
+});
+
+describe('recovery, end to end', () => {
+  it('restores a real vault after the passphrase is forgotten', async () => {
+    // A vault, and something written into it.
+    const vault = await createVault('a phrase set carelessly on day one');
+    const reg = await app.inject({
+      method: 'POST',
+      url: '/v1/identity/guest',
+      payload: { passphrase: vault.passphrase, recovery: vault.recovery },
+    });
+    const account = reg.json();
+
+    const sealed = await sealText(`${MARKER} the thing I could not say`, vault.vaultKey, 1);
+    const intent = await app.inject({
+      method: 'POST',
+      url: '/v1/thoughts/intents',
+      headers: { authorization: `Bearer ${account.token}` },
+      payload: {
+        type: 'text',
+        byteSize: sealed.ciphertext.byteLength,
+        contentHash: sealed.contentHash,
+      },
+    });
+    await fetch(intent.json().uploadUrl, {
+      method: 'PUT',
+      body: sealed.ciphertext as unknown as BodyInit,
+      headers: { 'content-type': 'application/octet-stream' },
+    });
+    const registered = await app.inject({
+      method: 'POST',
+      url: '/v1/thoughts',
+      headers: { authorization: `Bearer ${account.token}` },
+      payload: {
+        intentId: intent.json().intentId,
+        wrappedKey: sealed.wrappedKey,
+        header: sealed.header,
+      },
+    });
+    const thoughtId = registered.json().thought.id;
+
+    // The phrase is gone. Only the kit survives.
+    const material = await app.inject({
+      method: 'GET',
+      url: `/v1/identity/unlock/${account.userId}`,
+    });
+    const recoveredKey = await unlockWithRecoveryCode(
+      vault.recoveryCode,
+      material.json().recovery,
+    );
+
+    // Set a new phrase and store the re-wrapped key.
+    const rewrapped = await changePassphrase(recoveredKey, 'a phrase they will remember');
+    const rotate = await app.inject({
+      method: 'POST',
+      url: '/v1/identity/rotate',
+      headers: { authorization: `Bearer ${account.token}` },
+      payload: { passphrase: rewrapped },
+    });
+    expect(rotate.statusCode).toBe(200);
+
+    // The new phrase now opens the vault, and the memory written before the
+    // reset is still readable.
+    const after = await app.inject({ method: 'GET', url: `/v1/identity/unlock/${account.userId}` });
+    const unlocked = await unlockWithPassphrase(
+      'a phrase they will remember',
+      after.json().passphrase,
+    );
+
+    const fetched = await app.inject({
+      method: 'GET',
+      url: `/v1/thoughts/${thoughtId}`,
+      headers: { authorization: `Bearer ${account.token}` },
+    });
+    const { thought } = fetched.json();
+    const ciphertext = new Uint8Array(await (await fetch(thought.downloadUrl)).arrayBuffer());
+
+    await expect(
+      openText(ciphertext, thought.header, thought.wrappedKey, unlocked),
+    ).resolves.toContain('the thing I could not say');
+
+    await getDatabase().delete(users).where(eq(users.id, account.userId));
+  });
+
+  it('serves unlock material that is useless on its own', async () => {
+    const res = await app.inject({ method: 'GET', url: `/v1/identity/unlock/${userId}` });
+    expect(res.statusCode).toBe(200);
+    const body = res.json();
+
+    // Salts and wrapped keys only — no plaintext, no derived secret.
+    expect(body.passphrase.wrappedVaultKey).toBeTruthy();
+    expect(body.recovery.wrappedVaultKey).toBeTruthy();
+    expect(JSON.stringify(body)).not.toContain(PASSPHRASE);
+    expect(JSON.stringify(body)).not.toContain(MARKER);
+
+    // The two wrapped copies must differ, or one way in would expose the other.
+    expect(body.passphrase.wrappedVaultKey).not.toBe(body.recovery.wrappedVaultKey);
+  });
+
+  it('never stores anything that reveals the recovery code', async () => {
+    const rows = await getDatabase().select().from(users).where(eq(users.id, userId));
+    const dump = JSON.stringify(rows);
+    expect(dump).not.toContain(PASSPHRASE);
+    expect(dump).not.toContain(MARKER);
   });
 });
