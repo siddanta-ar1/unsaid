@@ -14,7 +14,9 @@
     "test": "turbo run test",
     "infra:up": "docker compose -f infra/docker-compose.yml up -d",
     "infra:down": "docker compose -f infra/docker-compose.yml down",
-    "infra:reset": "docker compose -f infra/docker-compose.yml down -v"
+    "infra:reset": "docker compose -f infra/docker-compose.yml down -v",
+    "scan:secrets": "node scripts/scan-secrets.mjs --all",
+    "prepare": "git config core.hooksPath .githooks || true"
   },
   "devDependencies": {
     "turbo": "^2.5.8",

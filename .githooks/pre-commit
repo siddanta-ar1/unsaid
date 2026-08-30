@@ -1,0 +1,4 @@
+#!/bin/sh
+# Tracked in the repo and activated by `core.hooksPath`, so it survives a fresh
+# clone instead of living only in one machine's .git directory.
+exec node scripts/scan-secrets.mjs

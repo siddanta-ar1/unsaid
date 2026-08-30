@@ -66,6 +66,15 @@ jobs:
     needs: verify
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '20' }
+
+      # A .gitignore is a convention with no enforcement, and a pattern that
+      # silently fails to match leaves no trace until the push has happened.
+      # This inspects content, so a renamed secret is still caught.
+      - name: Scan the tree for secrets
+        run: node scripts/scan-secrets.mjs --all
+
       - name: Assert no content columns were introduced
         run: |
           if grep -nE "^\s+(title|body|text|transcript|content|tags|mood)\s*:" \

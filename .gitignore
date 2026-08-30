@@ -1,29 +1,42 @@
+# ─── Secrets ──────────────────────────────────────────────────────────────
+# Deny by shape, not by known filename. Anything matching these patterns stays
+# out even if someone adds a new one; `.env.example` is the single documented
+# exception and must only ever contain local-development placeholders.
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+*.keystore
+id_rsa*
+id_ed25519*
+credentials.json
+service-account*.json
+
+# Solana keypairs are PRIVATE KEYS. The program keypair controls the program
+# address and can deploy to it; a wallet keypair controls funds. Neither ever
+# belongs in git — back them up out of band. A deployment is verifiable from
+# the public program address in Anchor.toml and declare_id!().
+*keypair*.json
+keypairs/
+
+# ─── Build output ─────────────────────────────────────────────────────────
 node_modules/
 dist/
 .next/
 .turbo/
 coverage/
 *.tsbuildinfo
-
-# secrets — never commit
-.env
-.env.*
-!.env.example
-*.pem
-*.key
-keypairs/
 target/
 test-ledger/
-.DS_Store
 
-# Solana build output. The program keypair is a PRIVATE KEY — whoever holds it
-# controls the program address and can deploy to it. It must never be committed;
-# back it up out of band. The program's public address is in Anchor.toml and
-# declare_id!(), which is all anyone needs to verify a deployment.
-target/
-**/*-keypair.json
-
-# Next.js regenerates this on every dev/build, and its contents differ between
-# the two — committing it means a permanently dirty tree. CI runs the build
-# before the typecheck, so it always exists when tsconfig needs it.
+# Next regenerates this on every dev run and build, writing different import
+# paths for each, so tracking it leaves the tree permanently dirty. CI builds
+# before it typechecks, so the file exists whenever tsconfig resolves it.
 next-env.d.ts
+
+# ─── Local noise ──────────────────────────────────────────────────────────
+.DS_Store
+*.log
