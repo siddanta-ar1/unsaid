@@ -7,6 +7,7 @@ import { DurationBucket, SizeBucket } from './primitives.js';
  * type error and a runtime rejection, not a silent privacy leak.
  */
 export const AnalyticsEvent = z.discriminatedUnion('name', [
+  z.object({ name: z.literal('vault_created'), platform: z.enum(['web', 'ios', 'android']) }).strict(),
   z.object({
     name: z.literal('capture_started'),
     platform: z.enum(['web', 'ios', 'android']),

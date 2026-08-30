@@ -10,6 +10,7 @@ import { currentUserId, requireAuth } from '../lib/auth.js';
 import { AppError } from '../lib/errors.js';
 import { loadConfig } from '../lib/config.js';
 import { track } from '../lib/analytics.js';
+import { ANCHOR_LIMIT } from '../lib/rate-limits.js';
 
 const IdParam = z.object({ id: z.uuid() });
 
@@ -29,7 +30,10 @@ export const solanaRoutes: FastifyPluginAsyncZod = async (app) => {
 
   app.post(
     '/v1/thoughts/:id/anchor',
-    { schema: { params: IdParam, body: AnchorRequest, response: { 200: AnchorResponse } } },
+    {
+      config: { rateLimit: ANCHOR_LIMIT },
+      schema: { params: IdParam, body: AnchorRequest, response: { 200: AnchorResponse } },
+    },
     async (request) => {
       const db = getDatabase();
       const config = loadConfig();

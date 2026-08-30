@@ -19,6 +19,7 @@ import { currentUserId, requireAuth } from '../lib/auth.js';
 import { AppError } from '../lib/errors.js';
 import { getStorage } from '../lib/storage.js';
 import { track } from '../lib/analytics.js';
+import { UPLOAD_INTENT_LIMIT } from '../lib/rate-limits.js';
 
 const IdParam = z.object({ id: z.uuid() });
 
@@ -33,7 +34,10 @@ export const thoughtRoutes: FastifyPluginAsyncZod = async (app) => {
   /** Step 1-3 of §17.3: reserve an object key and hand back a signed PUT URL. */
   app.post(
     '/v1/thoughts/intents',
-    { schema: { body: CreateIntentRequest, response: { 201: CreateIntentResponse } } },
+    {
+      config: { rateLimit: UPLOAD_INTENT_LIMIT },
+      schema: { body: CreateIntentRequest, response: { 201: CreateIntentResponse } },
+    },
     async (request, reply) => {
       const db = getDatabase();
       const storage = getStorage();

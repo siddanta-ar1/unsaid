@@ -209,6 +209,40 @@ export const securityEvents = pgTable(
   (t) => [index('security_events_subject_idx').on(t.subjectId, t.createdAt.desc())],
 );
 
+/**
+ * Analytics events. Blueprint §31.1 and §25.3.
+ *
+ * Keyed by a rotating cohort key rather than a user id, so the funnel can be
+ * counted without building a per-person record of when someone felt bad enough
+ * to write. `properties` only ever holds the bucketed values the strict event
+ * union permits — an undeclared field is rejected before it reaches here.
+ */
+export const analyticsEvents = pgTable(
+  'analytics_events',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    cohortKey: text('cohort_key').notNull(),
+    name: text('name').notNull(),
+    properties: text('properties').notNull().default('{}'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index('analytics_events_name_created_idx').on(t.name, t.createdAt.desc())],
+);
+
+/**
+ * In-app feedback. The one place a user may deliberately write to us knowing a
+ * human reads it — which is why `message` exists here and nowhere else, and why
+ * the UI says so plainly before they type.
+ */
+export const feedback = pgTable('feedback', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  screen: text('screen').notNull(),
+  sentiment: text('sentiment').notNull(),
+  message: text('message'),
+  userId: uuid('user_id').references(() => users.id, { onDelete: 'set null' }),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
 export const schema = {
   users,
   objects,
@@ -219,6 +253,8 @@ export const schema = {
   solanaRecords,
   consents,
   securityEvents,
+  analyticsEvents,
+  feedback,
 };
 
 export type { bytea };

@@ -7,7 +7,9 @@ import { consents, reflections, thoughts } from '../db/schema.js';
 import { currentUserId, requireAuth } from '../lib/auth.js';
 import { AppError } from '../lib/errors.js';
 import { getReflectionProvider } from '../lib/ai/index.js';
+import { crisisResourcesFor } from '../lib/ai/crisis.js';
 import { track } from '../lib/analytics.js';
+import { REFLECT_LIMIT } from '../lib/rate-limits.js';
 
 const IdParam = z.object({ id: z.uuid() });
 
@@ -30,7 +32,10 @@ export const echoRoutes: FastifyPluginAsyncZod = async (app) => {
 
   app.post(
     '/v1/thoughts/:id/reflect',
-    { schema: { params: IdParam, body: ReflectRequest, response: { 200: ReflectResponse } } },
+    {
+      config: { rateLimit: REFLECT_LIMIT },
+      schema: { params: IdParam, body: ReflectRequest, response: { 200: ReflectResponse } },
+    },
     async (request) => {
       const db = getDatabase();
       const userId = currentUserId(request);
@@ -97,11 +102,26 @@ export const echoRoutes: FastifyPluginAsyncZod = async (app) => {
         status: result.safetyNotice === 'support_resources' ? 'safety' : 'ok',
       });
 
+      // Resources are attached only when the support path fired, and are
+      // resolved from a request hint rather than anything we store about the
+      // person. Getting the region wrong costs nothing: the fallback is a
+      // directory, not a wrong number.
+      const support =
+        result.safetyNotice === 'support_resources'
+          ? (() => {
+              const region = crisisResourcesFor(
+                (request.headers['x-region'] as string | undefined) ?? null,
+              );
+              return { label: region.label, resources: region.resources };
+            })()
+          : null;
+
       return {
         reflectionId: record.id,
         content: result.content,
         modelVersion: result.modelVersion,
         safetyNotice: result.safetyNotice,
+        support,
       };
     },
   );

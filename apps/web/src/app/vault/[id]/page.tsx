@@ -9,10 +9,19 @@ import { useVault } from '@/lib/vault';
 import { deleteThought, grantReflectionConsent, openThought, reflect } from '@/lib/thoughts';
 import { ReflectConsentSheet } from '@/components/ReflectConsentSheet';
 import { AnchorPanel } from '@/components/AnchorPanel';
+import { SupportResources } from '@/components/SupportResources';
+
+interface SupportResource {
+  name: string;
+  phone: string | null;
+  url?: string;
+  hours: string;
+  note?: string;
+}
 
 export default function ThoughtPage() {
   return (
-    <Shell>
+    <Shell screen="memory">
       <UnlockGate>
         <ThoughtDetail />
       </UnlockGate>
@@ -33,7 +42,11 @@ function ThoughtDetail() {
   const [error, setError] = useState<string | null>(null);
 
   const [showConsent, setShowConsent] = useState(false);
-  const [echo, setEcho] = useState<{ content: string; safety: string } | null>(null);
+  const [echo, setEcho] = useState<{
+    content: string;
+    safety: string;
+    support: { label: string; resources: SupportResource[] } | null;
+  } | null>(null);
   const [echoBusy, setEchoBusy] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState<DeleteChoice | null>(null);
 
@@ -74,7 +87,11 @@ function ThoughtDetail() {
     try {
       await grantReflectionConsent(token);
       const result = await reflect(id, text, token);
-      setEcho({ content: result.content, safety: result.safetyNotice });
+      setEcho({
+        content: result.content,
+        safety: result.safetyNotice,
+        support: result.support ?? null,
+      });
     } catch {
       setError('Echo could not respond right now. Your thought is untouched.');
     } finally {
@@ -131,13 +148,11 @@ function ThoughtDetail() {
           <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-ink-soft">
             {echo.content}
           </p>
-          {echo.safety === 'support_resources' && (
-            <p className="mt-4 border-t border-line pt-4 text-xs leading-relaxed text-ember">
-              If you are in danger right now, please contact someone you trust or a local
-              emergency or crisis line. UNSAID is not a crisis service.
-            </p>
-          )}
         </div>
+      )}
+
+      {echo?.support && (
+        <SupportResources label={echo.support.label} resources={echo.support.resources} />
       )}
 
       <AnchorPanel thoughtId={id} />

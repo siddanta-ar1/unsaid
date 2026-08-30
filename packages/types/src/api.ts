@@ -135,12 +135,29 @@ export const ReflectRequest = z.object({
   /** Client-decrypted content, sent for this one operation only. */
   content: z.string().min(1).max(20_000),
 });
+/** A crisis resource, resolved for the requester's region. */
+export const CrisisResource = z.object({
+  name: z.string(),
+  phone: z.string().nullable(),
+  url: z.string().optional(),
+  hours: z.string(),
+  note: z.string().optional(),
+});
+
 export const ReflectResponse = z.object({
   reflectionId: OpaqueId,
   content: z.string(),
   modelVersion: z.string(),
   /** Set when the safety classifier routed this to the support path (§8.5). */
   safetyNotice: z.enum(['none', 'support_resources']),
+  /**
+   * Populated only alongside a support notice. Resolved from a region hint,
+   * never from profiling — and never used to gate access to the vault.
+   */
+  support: z
+    .object({ label: z.string(), resources: z.array(CrisisResource) })
+    .nullable()
+    .default(null),
 });
 
 /* ------------------------------------------------------------------ solana */

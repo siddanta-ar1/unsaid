@@ -35,7 +35,7 @@ const SECTIONS = [
 
 export default function PrivacyPage() {
   return (
-    <Shell>
+    <Shell screen="privacy">
       <div className="py-8">
         <h1 className="font-serif text-2xl text-ink">How this actually works</h1>
         <p className="mt-3 text-sm leading-relaxed text-ink-soft">

@@ -17,7 +17,7 @@ import { listThoughts } from '@/lib/thoughts';
  */
 export default function VaultPage() {
   return (
-    <Shell>
+    <Shell screen="vault">
       <UnlockGate>
         <VaultList />
       </UnlockGate>

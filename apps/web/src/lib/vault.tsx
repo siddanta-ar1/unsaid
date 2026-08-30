@@ -10,6 +10,7 @@ import {
   unlockWithRecoveryCode,
 } from '@unsaid/crypto';
 import { apiFetch } from './api';
+import { track } from './signals';
 
 /**
  * Holds the unlocked vault key for the lifetime of the tab.
@@ -98,6 +99,8 @@ export function VaultProvider({ children }: { children: ReactNode }) {
       // Held in memory only, and only until the user confirms they have saved
       // it. We never send it anywhere and cannot show it again.
       setPendingRecoveryCode(vault.recoveryCode);
+
+      track({ name: 'vault_created', platform: 'web' });
     },
     [startSession],
   );

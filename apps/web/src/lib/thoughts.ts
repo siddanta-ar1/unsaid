@@ -6,6 +6,8 @@ import type {
 } from '@unsaid/types';
 import { open, seal, sealText } from '@unsaid/crypto';
 import { apiFetch, getCiphertext, putCiphertext } from './api';
+import { track } from './signals';
+import { toSizeBucket } from '@unsaid/types';
 
 /**
  * The client-side capture pipeline. Every function here encrypts before it
@@ -47,6 +49,14 @@ async function saveSealed(
       wrappedKey: sealed.wrappedKey,
       header: sealed.header,
     },
+  });
+
+  // Activation, per §24.3: a capture that reached a private save the user
+  // chose — not an account creation.
+  track({
+    name: 'private_save_completed',
+    storageMode: 'cloud',
+    encryptedSizeBucket: toSizeBucket(sealed.ciphertext.byteLength),
   });
 
   return registered.thought;
@@ -98,11 +108,16 @@ export async function deleteThought(
   await apiFetch(`/v1/thoughts/${id}`, { method: 'DELETE', token, body: { mode } });
 }
 
-export async function reflect(
-  id: string,
-  content: string,
-  token: string,
-): Promise<{ content: string; safetyNotice: 'none' | 'support_resources' }> {
+export interface ReflectResult {
+  content: string;
+  safetyNotice: 'none' | 'support_resources';
+  support: {
+    label: string;
+    resources: { name: string; phone: string | null; url?: string; hours: string; note?: string }[];
+  } | null;
+}
+
+export async function reflect(id: string, content: string, token: string): Promise<ReflectResult> {
   return apiFetch(`/v1/thoughts/${id}/reflect`, {
     method: 'POST',
     token,

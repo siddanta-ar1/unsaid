@@ -12,12 +12,14 @@ import { loadConfig } from './lib/config.js';
 import { loggerOptions } from './lib/logger.js';
 import { AppError } from './lib/errors.js';
 import { reportError } from './lib/observability.js';
+import { DEFAULT_LIMIT, UNLIMITED_ROUTES } from './lib/rate-limits.js';
 import { identityRoutes } from './routes/identity.js';
 import { thoughtRoutes } from './routes/thoughts.js';
 import { echoRoutes } from './routes/echo.js';
 import { consentRoutes } from './routes/consents.js';
 import { solanaRoutes } from './routes/solana.js';
 import { healthRoutes } from './routes/health.js';
+import { signalRoutes } from './routes/signals.js';
 
 export async function buildApp() {
   const config = loadConfig();
@@ -45,13 +47,16 @@ export async function buildApp() {
   });
 
   await app.register(rateLimit, {
-    max: 120,
-    timeWindow: '1 minute',
+    ...DEFAULT_LIMIT,
     // Keyed by user when authenticated, so one abusive client on a shared NAT
-    // cannot lock out everyone behind it.
+    // cannot lock out everyone behind it. Individual routes tighten this with
+    // their own config; see lib/rate-limits.ts for why each budget is what it is.
     keyGenerator: (request) => request.userId ?? request.ip,
-    errorResponseBuilder: () => ({
-      error: { code: 'RATE_LIMITED', message: 'Too many requests.', requestId: '' },
+    // An uptime monitor polling on a schedule must never be throttled: a
+    // rate-limited health check reports an outage that is not happening.
+    allowList: (request) => UNLIMITED_ROUTES.includes(request.url.split('?')[0] as string),
+    errorResponseBuilder: (request) => ({
+      error: { code: 'RATE_LIMITED', message: 'Too many requests.', requestId: request.id },
     }),
   });
 
@@ -111,6 +116,7 @@ export async function buildApp() {
   await app.register(echoRoutes);
   await app.register(consentRoutes);
   await app.register(solanaRoutes);
+  await app.register(signalRoutes);
 
   return app;
 }

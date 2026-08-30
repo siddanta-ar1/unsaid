@@ -10,7 +10,7 @@ import { UnlockGate } from '@/components/UnlockGate';
  */
 export default function HomePage() {
   return (
-    <Shell>
+    <Shell screen="home">
       <UnlockGate>
         <div className="flex flex-1 flex-col justify-center py-16">
           <h1 className="font-serif text-3xl leading-snug text-ink">What is on your mind?</h1>

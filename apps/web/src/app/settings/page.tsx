@@ -14,7 +14,7 @@ import { useVault } from '@/lib/vault';
  */
 export default function SettingsPage() {
   return (
-    <Shell>
+    <Shell screen="settings">
       <UnlockGate>
         <SettingsScreen />
       </UnlockGate>

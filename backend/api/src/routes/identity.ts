@@ -16,6 +16,7 @@ import { getDatabase } from '../db/client.js';
 import { securityEvents, thoughts, users } from '../db/schema.js';
 import { currentUserId, issueSession, requireAuth } from '../lib/auth.js';
 import { AppError } from '../lib/errors.js';
+import { REGISTER_LIMIT, UNLOCK_LIMIT } from '../lib/rate-limits.js';
 
 /**
  * Identity. No email, no server-side password.
@@ -28,7 +29,10 @@ import { AppError } from '../lib/errors.js';
 export const identityRoutes: FastifyPluginAsyncZod = async (app) => {
   app.post(
     '/v1/identity/guest',
-    { schema: { body: RegisterGuestRequest, response: { 201: RegisterGuestResponse } } },
+    {
+      config: { rateLimit: REGISTER_LIMIT },
+      schema: { body: RegisterGuestRequest, response: { 201: RegisterGuestResponse } },
+    },
     async (request, reply) => {
       const db = getDatabase();
       const { passphrase, recovery } = request.body;
@@ -79,6 +83,7 @@ export const identityRoutes: FastifyPluginAsyncZod = async (app) => {
   app.get(
     '/v1/identity/unlock/:id',
     {
+      config: { rateLimit: UNLOCK_LIMIT },
       schema: { params: z.object({ id: z.uuid() }), response: { 200: UnlockMaterialResponse } },
     },
     async (request) => {

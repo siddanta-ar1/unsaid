@@ -6,6 +6,8 @@ import { Shell } from '@/components/Shell';
 import { UnlockGate } from '@/components/UnlockGate';
 import { useVault } from '@/lib/vault';
 import { saveAudioThought, saveTextThought } from '@/lib/thoughts';
+import { track } from '@/lib/signals';
+import { toDurationBucket } from '@unsaid/types';
 
 type Stage = 'capturing' | 'deciding' | 'saving' | 'saved';
 
@@ -37,10 +39,15 @@ function CaptureScreen() {
 
   const recorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
+  // The recorder's onstop closure captures state at start; a ref stays current.
+  const elapsedRef = useRef(0);
 
   useEffect(() => {
     if (!recording) return;
-    const timer = setInterval(() => setElapsed((value) => value + 1), 1000);
+    const timer = setInterval(() => {
+      elapsedRef.current += 1;
+      setElapsed(elapsedRef.current);
+    }, 1000);
     return () => clearInterval(timer);
   }, [recording]);
 
@@ -61,12 +68,18 @@ function CaptureScreen() {
       recorder.ondataavailable = (event) => chunksRef.current.push(event.data);
       recorder.onstop = () => {
         setAudio(new Blob(chunksRef.current, { type: recorder.mimeType }));
-        stream.getTracks().forEach((track) => track.stop());
+        stream.getTracks().forEach((audioTrack) => audioTrack.stop());
+        track({
+          name: 'capture_completed',
+          captureType: 'audio',
+          durationBucket: toDurationBucket(elapsedRef.current * 1000),
+        });
         setStage('deciding');
       };
       recorder.start();
       recorderRef.current = recorder;
       setRecording(true);
+      elapsedRef.current = 0;
       setElapsed(0);
     } catch {
       setError('Your microphone is not available. You can write instead.');
@@ -203,7 +216,14 @@ function CaptureScreen() {
           <div className="flex gap-3 py-6">
             <button
               type="button"
-              onClick={() => setStage('deciding')}
+              onClick={() => {
+                track({
+                  name: 'capture_completed',
+                  captureType: 'text',
+                  durationBucket: toDurationBucket(0),
+                });
+                setStage('deciding');
+              }}
               disabled={text.trim().length === 0}
               className="rounded-xl bg-ink px-6 py-3 text-paper disabled:opacity-30"
             >
@@ -221,7 +241,7 @@ function CaptureScreen() {
 
 export default function CapturePage() {
   return (
-    <Shell>
+    <Shell screen="capture">
       <UnlockGate>
         <Suspense fallback={null}>
           <CaptureScreen />

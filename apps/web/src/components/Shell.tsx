@@ -1,8 +1,25 @@
+'use client';
+
 import Link from 'next/link';
-import type { ReactNode } from 'react';
+import { useEffect, type ReactNode } from 'react';
+import { FeedbackButton } from './FeedbackButton';
+import { trackReturn, type FeedbackScreen } from '@/lib/signals';
 
 /** Page frame. Navigation is deliberately small and text-only. */
-export function Shell({ children, footer }: { children: ReactNode; footer?: ReactNode }) {
+export function Shell({
+  children,
+  footer,
+  screen,
+}: {
+  children: ReactNode;
+  footer?: ReactNode;
+  screen: FeedbackScreen;
+}) {
+  // Counted once per week per browser, against a key that rotates weekly.
+  useEffect(() => {
+    trackReturn();
+  }, []);
+
   return (
     <div className="mx-auto flex min-h-dvh w-full max-w-2xl flex-col px-6">
       <header className="flex items-baseline justify-between py-8">
@@ -25,6 +42,7 @@ export function Shell({ children, footer }: { children: ReactNode; footer?: Reac
       <footer className="py-8 text-xs text-ink-faint">
         {footer ?? 'Your thoughts are encrypted on this device before they are saved.'}
       </footer>
+      <FeedbackButton screen={screen} />
     </div>
   );
 }
