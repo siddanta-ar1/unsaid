@@ -22,3 +22,8 @@ test-ledger/
 # declare_id!(), which is all anyone needs to verify a deployment.
 target/
 **/*-keypair.json
+
+# Next.js regenerates this on every dev/build, and its contents differ between
+# the two — committing it means a permanently dirty tree. CI runs the build
+# before the typecheck, so it always exists when tsconfig needs it.
+next-env.d.ts
