@@ -1,0 +1,24 @@
+node_modules/
+dist/
+.next/
+.turbo/
+coverage/
+*.tsbuildinfo
+
+# secrets — never commit
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+keypairs/
+target/
+test-ledger/
+.DS_Store
+
+# Solana build output. The program keypair is a PRIVATE KEY — whoever holds it
+# controls the program address and can deploy to it. It must never be committed;
+# back it up out of band. The program's public address is in Anchor.toml and
+# declare_id!(), which is all anyone needs to verify a deployment.
+target/
+**/*-keypair.json

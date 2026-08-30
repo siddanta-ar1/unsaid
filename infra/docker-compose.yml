@@ -1,0 +1,58 @@
+# Local development infrastructure.
+# Postgres stands in for Supabase; MinIO speaks the same S3 API as Cloudflare R2,
+# so the storage adapter is identical in dev and prod — only the endpoint changes.
+name: unsaid
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: unsaid
+      POSTGRES_PASSWORD: unsaid_local_dev
+      POSTGRES_DB: unsaid
+    ports:
+      - '54332:5432'
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U unsaid -d unsaid']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  minio:
+    image: minio/minio:latest
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: unsaid_dev
+      MINIO_ROOT_PASSWORD: unsaid_local_dev
+    ports:
+      - '9010:9000'
+      - '9011:9001'
+    volumes:
+      - miniodata:/data
+    healthcheck:
+      test: ['CMD', 'mc', 'ready', 'local']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # Creates the private bucket once MinIO is healthy, then exits.
+  minio-init:
+    image: minio/mc:latest
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+      mc alias set local http://minio:9000 unsaid_dev unsaid_local_dev &&
+      mc mb --ignore-existing local/unsaid-private &&
+      mc anonymous set none local/unsaid-private &&
+      echo 'bucket unsaid-private ready (private)'
+      "
+
+volumes:
+  pgdata:
+  miniodata:

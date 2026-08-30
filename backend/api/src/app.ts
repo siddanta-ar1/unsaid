@@ -1,0 +1,102 @@
+import cors from '@fastify/cors';
+import helmet from '@fastify/helmet';
+import rateLimit from '@fastify/rate-limit';
+import Fastify from 'fastify';
+import {
+  serializerCompiler,
+  validatorCompiler,
+  type ZodTypeProvider,
+} from 'fastify-type-provider-zod';
+import { z } from 'zod';
+import { loadConfig } from './lib/config.js';
+import { loggerOptions } from './lib/logger.js';
+import { AppError } from './lib/errors.js';
+import { identityRoutes } from './routes/identity.js';
+import { thoughtRoutes } from './routes/thoughts.js';
+import { echoRoutes } from './routes/echo.js';
+import { consentRoutes } from './routes/consents.js';
+import { solanaRoutes } from './routes/solana.js';
+
+export async function buildApp() {
+  const config = loadConfig();
+
+  const app = Fastify({
+    logger: { level: config.LOG_LEVEL, ...loggerOptions },
+    // Trust the platform proxy so rate limiting keys on the real client IP.
+    trustProxy: config.isProduction,
+    bodyLimit: 1024 * 1024, // 1 MB: ciphertext goes to storage, not through here.
+    genReqId: () => crypto.randomUUID(),
+  }).withTypeProvider<ZodTypeProvider>();
+
+  app.setValidatorCompiler(validatorCompiler);
+  app.setSerializerCompiler(serializerCompiler);
+
+  await app.register(helmet, {
+    contentSecurityPolicy: { directives: { defaultSrc: ["'none'"], frameAncestors: ["'none'"] } },
+    hsts: config.isProduction ? { maxAge: 31_536_000, includeSubDomains: true } : false,
+  });
+
+  await app.register(cors, {
+    origin: config.CORS_ORIGIN.split(',').map((o) => o.trim()),
+    credentials: true,
+    methods: ['GET', 'POST', 'DELETE', 'OPTIONS'],
+  });
+
+  await app.register(rateLimit, {
+    max: 120,
+    timeWindow: '1 minute',
+    // Keyed by user when authenticated, so one abusive client on a shared NAT
+    // cannot lock out everyone behind it.
+    keyGenerator: (request) => request.userId ?? request.ip,
+    errorResponseBuilder: () => ({
+      error: { code: 'RATE_LIMITED', message: 'Too many requests.', requestId: '' },
+    }),
+  });
+
+  /**
+   * A single error handler. Nothing here interpolates the request body into a
+   * response or a log line — an error message must never become a channel that
+   * reflects plaintext back out (§17.1).
+   */
+  app.setErrorHandler((error, request, reply) => {
+    const requestId = request.id;
+
+    if (error instanceof AppError) {
+      request.log.warn({ code: error.code, requestId }, 'handled error');
+      return reply
+        .status(error.statusCode)
+        .send({ error: { code: error.code, message: error.message, requestId } });
+    }
+
+    if (error instanceof z.ZodError || (error as { validation?: unknown }).validation) {
+      // Field paths only. Never the values that failed.
+      const fields =
+        error instanceof z.ZodError ? error.issues.map((i) => i.path.join('.')) : undefined;
+      request.log.warn({ fields, requestId }, 'validation failed');
+      return reply.status(400).send({
+        error: { code: 'VALIDATION_FAILED', message: 'Request failed validation.', requestId },
+      });
+    }
+
+    request.log.error({ err: error, requestId }, 'unhandled error');
+    return reply.status(500).send({
+      error: { code: 'INTERNAL', message: 'Something went wrong on our side.', requestId },
+    });
+  });
+
+  app.setNotFoundHandler((request, reply) =>
+    reply
+      .status(404)
+      .send({ error: { code: 'NOT_FOUND', message: 'Not found.', requestId: request.id } }),
+  );
+
+  app.get('/health', async () => ({ status: 'ok', version: '0.1.0' }));
+
+  await app.register(identityRoutes);
+  await app.register(thoughtRoutes);
+  await app.register(echoRoutes);
+  await app.register(consentRoutes);
+  await app.register(solanaRoutes);
+
+  return app;
+}

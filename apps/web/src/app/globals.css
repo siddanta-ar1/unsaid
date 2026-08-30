@@ -1,0 +1,48 @@
+@import 'tailwindcss';
+
+/*
+ * Quiet by design. The product is used late at night by people who are not
+ * feeling good; the interface should recede rather than demand attention.
+ * No accent-coloured calls to action, no badges, no counters.
+ */
+@theme {
+  --color-ink: #12100e;
+  --color-ink-soft: #6b6560;
+  --color-ink-faint: #a29b95;
+  --color-paper: #faf8f5;
+  --color-paper-raised: #ffffff;
+  --color-line: #e8e3dc;
+  --color-ember: #8a6f5c;
+
+  --font-sans: ui-sans-serif, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-serif: ui-serif, Georgia, 'Times New Roman', serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  @theme {
+    --color-ink: #f2efe9;
+    --color-ink-soft: #a29b95;
+    --color-ink-faint: #6b6560;
+    --color-paper: #0d0c0b;
+    --color-paper-raised: #171512;
+    --color-line: #2a2724;
+    --color-ember: #c4a58c;
+  }
+}
+
+html,
+body {
+  background: var(--color-paper);
+  color: var(--color-ink);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Respect a stated preference for less motion — not a decorative concern here. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

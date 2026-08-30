@@ -1,0 +1,33 @@
+{
+  "name": "@unsaid/web",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "next dev -p 3010",
+    "build": "next build",
+    "start": "next start -p 3010",
+    "lint": "next lint",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@solana/kit": "^8.2.0",
+    "@solana/react": "^8.2.0",
+    "@solana/wallet-standard-features": "^1.4.0",
+    "@unsaid/crypto": "workspace:*",
+    "@unsaid/solana": "workspace:*",
+    "@unsaid/types": "workspace:*",
+    "@wallet-standard/react": "^1.0.3",
+    "next": "^16.3.3",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.1.14",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "@unsaid/config": "workspace:*",
+    "tailwindcss": "^4.1.14",
+    "typescript": "^5.9.3"
+  }
+}
