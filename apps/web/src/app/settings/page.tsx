@@ -4,6 +4,8 @@ import Link from 'next/link';
 import { Shell } from '@/components/Shell';
 import { UnlockGate } from '@/components/UnlockGate';
 import { WalletConnect } from '@/components/WalletConnect';
+import { VaultExport } from '@/components/VaultExport';
+import { VaultSecurity } from '@/components/VaultSecurity';
 import { useVault } from '@/lib/vault';
 
 /**
@@ -28,6 +30,22 @@ function SettingsScreen() {
       <h1 className="font-serif text-2xl text-ink">Settings</h1>
 
       <section className="mt-10">
+        <h2 className="text-base text-ink">Take your memories with you</h2>
+        <p className="mt-2 mb-5 text-sm leading-relaxed text-ink-soft">
+          Everything you have written, decrypted on this device.
+        </p>
+        <VaultExport />
+      </section>
+
+      <section className="mt-12">
+        <h2 className="text-base text-ink">Your phrase and recovery kit</h2>
+        <p className="mt-2 mb-5 text-sm leading-relaxed text-ink-soft">
+          Change how you get in, or replace a kit you no longer trust.
+        </p>
+        <VaultSecurity />
+      </section>
+
+      <section className="mt-12">
         <h2 className="text-base text-ink">Ownership</h2>
         <p className="mt-2 mb-5 text-sm leading-relaxed text-ink-soft">
           Optional. UNSAID works completely without this.
