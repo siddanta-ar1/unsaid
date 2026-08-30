@@ -28,6 +28,8 @@ That claim is enforced, not just asserted:
 | Analytics events are a closed, strict union | `packages/types/src/events.ts` |
 | A canary is searched for across DB, storage and logs | `backend/api/tests/flow.test.ts` |
 | Ownership is enforced in the query, not the UI | `backend/api/src/routes/thoughts.ts` |
+| Error reports are scrubbed before any vendor sees them | `backend/api/src/lib/observability.ts` |
+| Secrets cannot enter git history | `scripts/scan-secrets.mjs`, pre-commit + CI |
 
 ## Layout
 
@@ -61,6 +63,27 @@ pnpm --filter @unsaid/web dev        # Web  → http://localhost:3010
 
 Ports avoid the 3000/3001 and 54322 defaults because those commonly collide with
 other local projects.
+
+## Recovery
+
+A forgotten passphrase is survivable. Content keys are wrapped under a single
+vault key, and that vault key is wrapped once per way in — the passphrase and a
+recovery kit. Losing the phrase costs a re-lock, not a vault.
+
+```
+passphrase ──PBKDF2──▶ KEK ──AES-KW wraps──┐
+                                            ├──▶ vault key ──wraps──▶ content keys
+recovery code ──PBKDF2──▶ KEK ──AES-KW wraps┘
+```
+
+Changing a passphrase re-wraps one key. Ciphertext is never rewritten, nothing
+is re-uploaded, and an existing recovery kit keeps working.
+
+## Health
+
+- `GET /health` — liveness. Is the process up.
+- `GET /ready` — reaches Postgres and object storage, and returns 503 with the
+  failing dependency named. A check that cannot fail reports nothing.
 
 ## Testing
 

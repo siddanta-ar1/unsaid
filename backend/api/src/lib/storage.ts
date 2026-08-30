@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import {
   DeleteObjectCommand,
   GetObjectCommand,
+  HeadBucketCommand,
   HeadObjectCommand,
   PutObjectCommand,
   S3Client,
@@ -95,6 +96,17 @@ export class ObjectStorage {
     } catch {
       return false;
     }
+  }
+
+  /**
+   * Reachability probe for the readiness endpoint.
+   *
+   * Deliberately lets errors propagate. Every other method here swallows
+   * failures and returns false, which is right for request handling and wrong
+   * for a health check — a probe that cannot fail reports nothing.
+   */
+  async checkReachable(): Promise<void> {
+    await this.client.send(new HeadBucketCommand({ Bucket: this.config.S3_BUCKET }));
   }
 
   /** Returns true only when storage confirmed removal (§12.4 cloud delete). */

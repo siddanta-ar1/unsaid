@@ -11,11 +11,13 @@ import { z } from 'zod';
 import { loadConfig } from './lib/config.js';
 import { loggerOptions } from './lib/logger.js';
 import { AppError } from './lib/errors.js';
+import { reportError } from './lib/observability.js';
 import { identityRoutes } from './routes/identity.js';
 import { thoughtRoutes } from './routes/thoughts.js';
 import { echoRoutes } from './routes/echo.js';
 import { consentRoutes } from './routes/consents.js';
 import { solanaRoutes } from './routes/solana.js';
+import { healthRoutes } from './routes/health.js';
 
 export async function buildApp() {
   const config = loadConfig();
@@ -79,6 +81,19 @@ export async function buildApp() {
     }
 
     request.log.error({ err: error, requestId }, 'unhandled error');
+
+    // Everything bound for an external tracker goes through the scrubber; the
+    // vendor SDK's own filtering is never what we rely on.
+    const thrown = error instanceof Error ? error : new Error(String(error));
+    reportError({
+      name: thrown.name,
+      message: thrown.message,
+      ...(thrown.stack ? { stack: thrown.stack } : {}),
+      requestId,
+      route: request.routeOptions?.url ?? request.url,
+      ...(request.userId ? { userId: request.userId } : {}),
+    });
+
     return reply.status(500).send({
       error: { code: 'INTERNAL', message: 'Something went wrong on our side.', requestId },
     });
@@ -90,8 +105,7 @@ export async function buildApp() {
       .send({ error: { code: 'NOT_FOUND', message: 'Not found.', requestId: request.id } }),
   );
 
-  app.get('/health', async () => ({ status: 'ok', version: '0.1.0' }));
-
+  await app.register(healthRoutes);
   await app.register(identityRoutes);
   await app.register(thoughtRoutes);
   await app.register(echoRoutes);

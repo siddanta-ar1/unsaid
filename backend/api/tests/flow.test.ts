@@ -11,6 +11,7 @@ import {
   unlockWithRecoveryCode,
 } from '@unsaid/crypto';
 import { buildApp } from '../src/app.js';
+import { setErrorReporter, type ErrorEvent } from '../src/lib/observability.js';
 import { getDatabase } from '../src/db/client.js';
 import { solanaRecords, thoughts, users } from '../src/db/schema.js';
 import { eq } from 'drizzle-orm';
@@ -480,5 +481,33 @@ describe('recovery, end to end', () => {
     const dump = JSON.stringify(rows);
     expect(dump).not.toContain(PASSPHRASE);
     expect(dump).not.toContain(MARKER);
+  });
+});
+
+describe('error reporting', () => {
+  it('sends nothing readable to an external tracker', async () => {
+    const captured: ErrorEvent[] = [];
+    setErrorReporter((event) => captured.push(event));
+
+    // A route that throws while handling a request carrying the canary.
+    const probe = (await buildApp()) as unknown as FastifyInstance;
+    probe.get('/__boom', async () => {
+      throw new Error(`upstream failed while processing ${MARKER}`);
+    });
+    await probe.ready();
+
+    const res = await probe.inject({ method: 'GET', url: '/__boom' });
+    expect(res.statusCode).toBe(500);
+
+    // The response itself never reflects the message back.
+    expect(res.body).not.toContain(MARKER);
+
+    expect(captured).toHaveLength(1);
+    const [event] = captured;
+    expect(event?.requestId).toBeTruthy();
+    expect(event?.route).toBe('/__boom');
+
+    await probe.close();
+    setErrorReporter(null);
   });
 });
