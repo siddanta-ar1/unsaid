@@ -5,6 +5,7 @@ import type { WrappedVaultKey } from '@unsaid/types';
 import {
   changePassphrase,
   createVault,
+  deriveLoginProof,
   regenerateRecoveryKit,
   unlockWithPassphrase,
   unlockWithRecoveryCode,
@@ -91,7 +92,11 @@ export function VaultProvider({ children }: { children: ReactNode }) {
 
       const result = await apiFetch<{ userId: string; token: string }>('/v1/identity/guest', {
         method: 'POST',
-        body: { passphrase: vault.passphrase, recovery: vault.recovery },
+        body: {
+          passphrase: vault.passphrase,
+          recovery: vault.recovery,
+          loginProof: vault.loginProof,
+        },
       });
 
       startSession(result.userId, result.token, vault.vaultKey);
@@ -118,7 +123,7 @@ export function VaultProvider({ children }: { children: ReactNode }) {
 
       const result = await apiFetch<{ userId: string; token: string }>('/v1/identity/login', {
         method: 'POST',
-        body: { userId: id },
+        body: { userId: id, proof: await deriveLoginProof(vaultKey) },
       });
 
       startSession(result.userId, result.token, vaultKey);
@@ -139,7 +144,7 @@ export function VaultProvider({ children }: { children: ReactNode }) {
 
       const result = await apiFetch<{ userId: string; token: string }>('/v1/identity/login', {
         method: 'POST',
-        body: { userId: id },
+        body: { userId: id, proof: await deriveLoginProof(vaultKey) },
       });
       startSession(result.userId, result.token, vaultKey);
       setKeyVersion(material.keyVersion);

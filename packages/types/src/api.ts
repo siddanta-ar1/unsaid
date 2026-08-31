@@ -17,6 +17,8 @@ export type WrappedVaultKey = z.infer<typeof WrappedVaultKey>;
 export const RegisterGuestRequest = z.object({
   passphrase: WrappedVaultKey,
   recovery: WrappedVaultKey,
+  /** Derived from the vault key; stored and compared at login. */
+  loginProof: B64Url,
 });
 export const RegisterGuestResponse = z.object({
   userId: OpaqueId,
@@ -25,12 +27,15 @@ export const RegisterGuestResponse = z.object({
 });
 
 /**
- * Unlocking happens entirely on the device: the client fetches the wrapped key,
- * unwraps it locally, and only then asks for a session. The server never sees
- * proof of the passphrase because it never needs one — every byte it holds is
- * useless without the key the client just derived.
+ * Unlocking happens on the device: the client fetches the wrapped key and
+ * unwraps it locally. It then proves it succeeded.
+ *
+ * The proof is required because a session is not read-only — it authorises
+ * deleting a memory, forgetting one irreversibly, and overwriting the wrapped
+ * vault key. The vault id alone cannot be the bar, since it is printed on the
+ * recovery kit and shown in settings.
  */
-export const LoginRequest = z.object({ userId: OpaqueId });
+export const LoginRequest = z.object({ userId: OpaqueId, proof: B64Url });
 export const LoginResponse = RegisterGuestResponse;
 
 /** Public unlock material. Useless without the passphrase or recovery code. */

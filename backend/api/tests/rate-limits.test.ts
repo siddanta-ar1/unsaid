@@ -40,7 +40,11 @@ describe('registration', () => {
       const res = await app.inject({
         method: 'POST',
         url: '/v1/identity/guest',
-        payload: { passphrase: vault.passphrase, recovery: vault.recovery },
+        payload: {
+        passphrase: vault.passphrase,
+        recovery: vault.recovery,
+        loginProof: vault.loginProof,
+      },
       });
 
       if (res.statusCode === 429) {
@@ -94,7 +98,11 @@ describe('the error envelope', () => {
       const res = await app.inject({
         method: 'POST',
         url: '/v1/identity/guest',
-        payload: { passphrase: vault.passphrase, recovery: vault.recovery },
+        payload: {
+        passphrase: vault.passphrase,
+        recovery: vault.recovery,
+        loginProof: vault.loginProof,
+      },
       });
       if (res.statusCode === 201) created.push(res.json().userId);
       if (res.statusCode === 429) {

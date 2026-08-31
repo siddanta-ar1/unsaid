@@ -44,7 +44,11 @@ beforeAll(async () => {
   const res = await app.inject({
     method: 'POST',
     url: '/v1/identity/guest',
-    payload: { passphrase: vault.passphrase, recovery: vault.recovery },
+    payload: {
+        passphrase: vault.passphrase,
+        recovery: vault.recovery,
+        loginProof: vault.loginProof,
+      },
   });
   expect(res.statusCode).toBe(201);
   ({ token, userId } = res.json());
@@ -166,7 +170,11 @@ describe('authorization', () => {
     const reg = await app.inject({
       method: 'POST',
       url: '/v1/identity/guest',
-      payload: { passphrase: otherVault.passphrase, recovery: otherVault.recovery },
+      payload: {
+        passphrase: otherVault.passphrase,
+        recovery: otherVault.recovery,
+        loginProof: otherVault.loginProof,
+      },
     });
     const other = reg.json();
 
@@ -363,7 +371,11 @@ describe('solana anchoring', () => {
     const reg = await app.inject({
       method: 'POST',
       url: '/v1/identity/guest',
-      payload: { passphrase: otherVault.passphrase, recovery: otherVault.recovery },
+      payload: {
+        passphrase: otherVault.passphrase,
+        recovery: otherVault.recovery,
+        loginProof: otherVault.loginProof,
+      },
     });
     const other = reg.json();
 
@@ -386,7 +398,11 @@ describe('recovery, end to end', () => {
     const reg = await app.inject({
       method: 'POST',
       url: '/v1/identity/guest',
-      payload: { passphrase: vault.passphrase, recovery: vault.recovery },
+      payload: {
+        passphrase: vault.passphrase,
+        recovery: vault.recovery,
+        loginProof: vault.loginProof,
+      },
     });
     const account = reg.json();
 

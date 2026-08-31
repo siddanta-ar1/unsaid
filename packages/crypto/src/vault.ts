@@ -60,6 +60,8 @@ export interface NewVault {
   vaultKey: CryptoKey;
   passphrase: VaultKeyMaterial;
   recovery: RecoveryMaterial;
+  /** Proof of possession, stored by the server and compared at login. */
+  loginProof: string;
   /** Shown to the user exactly once. Never persisted anywhere by us. */
   recoveryCode: string;
 }
@@ -157,6 +159,7 @@ export async function createVault(passphrase: string): Promise<NewVault> {
       kdf: recoveryKdf,
       wrappedVaultKey: await wrapVaultKey(vaultKey, recoveryKek),
     },
+    loginProof: await deriveLoginProof(vaultKey),
     recoveryCode,
   };
 }
@@ -209,6 +212,41 @@ export async function regenerateRecoveryKit(
     recovery: { kdf, wrappedVaultKey: await wrapVaultKey(vaultKey, kek) },
     recoveryCode,
   };
+}
+
+/**
+ * A stable proof that the caller holds the vault key.
+ *
+ * The vault id is not a secret: it is printed on the recovery kit and shown in
+ * settings so a second device can find the vault. A session, however, is not a
+ * read-only capability — it authorises deleting a memory, forgetting one
+ * irreversibly, and overwriting the wrapped vault key. So the bar for issuing
+ * one has to be possession of the key itself.
+ *
+ * AES-KW is deterministic, so wrapping a fixed constant under the vault key
+ * yields a stable value that only a holder of that key can produce. It is
+ * derived from the *vault key* rather than the passphrase, which means the
+ * recovery kit reaches the same proof and a passphrase change does not
+ * invalidate it.
+ *
+ * The server stores this value to compare against, so anyone already holding
+ * the database could replay it — but they hold the ciphertext too, and it
+ * remains unreadable. What this stops is the far likelier case: someone who
+ * merely saw a vault id.
+ */
+const LOGIN_PROOF_PLAINTEXT = new Uint8Array(32).fill(0x5a);
+
+export async function deriveLoginProof(vaultKey: CryptoKey): Promise<string> {
+  const subtle = getCrypto().subtle;
+  const known = await subtle.importKey(
+    'raw',
+    LOGIN_PROOF_PLAINTEXT as BufferSource,
+    { name: 'AES-GCM', length: 256 },
+    true,
+    ['encrypt'],
+  );
+  const wrapped = await subtle.wrapKey('raw', known, vaultKey, 'AES-KW');
+  return toBase64Url(new Uint8Array(wrapped));
 }
 
 /**

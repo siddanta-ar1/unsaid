@@ -32,7 +32,11 @@ beforeAll(async () => {
   const res = await app.inject({
     method: 'POST',
     url: '/v1/identity/guest',
-    payload: { passphrase: vault.passphrase, recovery: vault.recovery },
+    payload: {
+        passphrase: vault.passphrase,
+        recovery: vault.recovery,
+        loginProof: vault.loginProof,
+      },
   });
   ({ token, userId } = res.json());
 
@@ -150,7 +154,11 @@ describe('what the budget counts', () => {
     const reg = await app.inject({
       method: 'POST',
       url: '/v1/identity/guest',
-      payload: { passphrase: other.passphrase, recovery: other.recovery },
+      payload: {
+        passphrase: other.passphrase,
+        recovery: other.recovery,
+        loginProof: other.loginProof,
+      },
     });
     const account = reg.json();
 

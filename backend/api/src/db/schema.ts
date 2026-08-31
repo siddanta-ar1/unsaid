@@ -56,6 +56,15 @@ export const users = pgTable(
     recoveryWrappedVaultKey: text('recovery_wrapped_vault_key').notNull(),
     recoveryIssuedAt: timestamp('recovery_issued_at', { withTimezone: true }).notNull().defaultNow(),
 
+    /**
+     * Proof that a caller holds the vault key, compared at login.
+     *
+     * Nullable only so the column could be added without a rewrite; the login
+     * route treats a null as "cannot authenticate" rather than "skip the
+     * check", so the failure direction is closed.
+     */
+    loginProof: text('login_proof'),
+
     keyVersion: smallint('key_version').notNull().default(1),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     lastSeenAt: timestamp('last_seen_at', { withTimezone: true }).notNull().defaultNow(),

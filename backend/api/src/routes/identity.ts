@@ -1,5 +1,6 @@
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
 import { eq, sql } from 'drizzle-orm';
+import { timingSafeEqual } from 'node:crypto';
 import { z } from 'zod';
 import {
   LoginRequest,
@@ -26,6 +27,18 @@ import { REGISTER_LIMIT, UNLOCK_LIMIT } from '../lib/rate-limits.js';
  * passphrase, one under the recovery code. Unwrapping happens on the device.
  * Everything here is inert without a secret the server has never seen.
  */
+/**
+ * Compares two proofs without leaking how far they matched. A byte-by-byte
+ * comparison would let an attacker who can time responses recover the value
+ * one character at a time.
+ */
+function proofsMatch(stored: string, provided: string): boolean {
+  const a = Buffer.from(stored, 'utf8');
+  const b = Buffer.from(provided, 'utf8');
+  if (a.length !== b.length) return false;
+  return timingSafeEqual(a, b);
+}
+
 export const identityRoutes: FastifyPluginAsyncZod = async (app) => {
   app.post(
     '/v1/identity/guest',
@@ -59,6 +72,7 @@ export const identityRoutes: FastifyPluginAsyncZod = async (app) => {
           recoveryIterations: recovery.kdf.iterations,
           recoveryAlgorithm: recovery.kdf.alg,
           recoveryWrappedVaultKey: recovery.wrappedVaultKey,
+          loginProof: request.body.loginProof,
         })
         .returning({ id: users.id });
       if (!created) throw AppError.internal();
@@ -116,25 +130,35 @@ export const identityRoutes: FastifyPluginAsyncZod = async (app) => {
   );
 
   /**
-   * Issues a session once the client has unwrapped the vault key locally.
+   * Issues a session once the client has unwrapped the vault key and proved it.
    *
-   * There is deliberately no proof-of-passphrase here. A session token only
-   * fetches ciphertext and wrapped keys — exactly what the endpoint above
-   * already serves unauthenticated — so demanding proof would add ceremony
-   * without adding protection. What actually guards the content is that the
-   * server cannot decrypt any of it.
+   * The proof matters because a session is not a read-only capability: it
+   * authorises deleting a memory, forgetting one irreversibly, and overwriting
+   * the wrapped vault key — which would lock the real owner out permanently,
+   * even holding the correct passphrase. The vault id cannot be the bar for
+   * that, since it is printed on the recovery kit and shown in settings so a
+   * second device can find the vault.
+   *
+   * Because the proof derives from the vault key rather than the passphrase,
+   * the recovery kit reaches the same session and changing a passphrase does
+   * not invalidate it.
    */
   app.post(
     '/v1/identity/login',
-    { schema: { body: LoginRequest, response: { 200: LoginResponse } } },
+    { config: { rateLimit: UNLOCK_LIMIT }, schema: { body: LoginRequest, response: { 200: LoginResponse } } },
     async (request) => {
       const db = getDatabase();
       const [user] = await db
-        .select({ id: users.id })
+        .select({ id: users.id, loginProof: users.loginProof })
         .from(users)
         .where(eq(users.id, request.body.userId))
         .limit(1);
-      if (!user) throw AppError.notFound();
+
+      // One rejection for "no such vault" and "wrong proof" alike: telling
+      // them apart would let someone enumerate which vault ids exist.
+      if (!user?.loginProof || !proofsMatch(user.loginProof, request.body.proof)) {
+        throw AppError.authRequired();
+      }
 
       await db.update(users).set({ lastSeenAt: new Date() }).where(eq(users.id, user.id));
       const session = await issueSession(user.id);

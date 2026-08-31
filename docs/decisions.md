@@ -49,6 +49,17 @@ key this became redundant: AES-KW is authenticated, so a wrong passphrase fails
 to unwrap the vault key. The wrapped vault key *is* the verifier, and the extra
 stored value was one more thing to get wrong.
 
+**A session requires proof of holding the vault key, not just the vault id.**
+An earlier version of this design issued a session from a user id alone, on the
+reasoning that a session "only fetches ciphertext". That reasoning was wrong: a
+session also authorises deleting a memory, forgetting one irreversibly, and
+overwriting the wrapped vault key — which locks the real owner out permanently
+even with the correct passphrase. And the vault id is not a secret; it is
+printed on the recovery kit and shown in settings so a second device can find
+the vault. Login now requires a proof derived from the vault key itself, so the
+recovery kit reaches the same session and a passphrase change does not
+invalidate it.
+
 **The unlock endpoint is unauthenticated.**
 A returning user needs salts and wrapped keys before they can derive anything,
 so `/v1/identity/unlock/:id` cannot require a session. It is safe because it is

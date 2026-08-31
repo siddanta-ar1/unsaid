@@ -30,7 +30,11 @@ beforeAll(async () => {
   const res = await app.inject({
     method: 'POST',
     url: '/v1/identity/guest',
-    payload: { passphrase: vault.passphrase, recovery: vault.recovery },
+    payload: {
+        passphrase: vault.passphrase,
+        recovery: vault.recovery,
+        loginProof: vault.loginProof,
+      },
   });
   ({ token, userId } = res.json());
 });
