@@ -35,7 +35,20 @@ const EnvSchema = z.object({
   // Echo. Absent means reflection is disabled rather than silently degraded.
   AI_PROVIDER: z.enum(['anthropic', 'echo-stub']).default('echo-stub'),
   ANTHROPIC_API_KEY: z.string().optional(),
-  AI_MODEL: z.string().default('claude-sonnet-5'),
+  // Matches .env.example, which said opus-5 while this default said sonnet-5 —
+  // the two disagreeing meant a deploy without AI_MODEL set would quietly run
+  // a different model from the one documented.
+  AI_MODEL: z.string().default('claude-opus-5'),
+
+  /**
+   * Reflections allowed per user per rolling week.
+   *
+   * Echo is the only unbounded cost in the system and the only path that sends
+   * content to a third party, so it needs a budget rather than a burst limit —
+   * the hourly rate limit still permits well over a thousand calls a week.
+   * Sized to be invisible to genuine use.
+   */
+  ECHO_WEEKLY_QUOTA: z.coerce.number().int().min(1).max(1000).default(50),
 
   SOLANA_NETWORK: z.enum(['devnet', 'mainnet-beta']).default('devnet'),
   SOLANA_RPC_URL: z.string().optional(),

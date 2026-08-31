@@ -145,6 +145,8 @@ export const CrisisResource = z.object({
 });
 
 export const ReflectResponse = z.object({
+  /** What is left of this week's budget, so the UI can warn before the wall. */
+  quota: z.object({ limit: z.number().int(), remaining: z.number().int().nonnegative() }),
   reflectionId: OpaqueId,
   content: z.string(),
   modelVersion: z.string(),

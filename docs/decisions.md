@@ -71,6 +71,16 @@ Distinguishing them would confirm that an id exists, which is an enumeration
 oracle. Ownership is part of the SQL `WHERE` clause rather than a check after
 the fetch.
 
+**Echo carries a weekly budget, not just a rate limit.**
+The hourly rate limit permits well over a thousand reflections a week per user,
+which bounds burst abuse but not the bill. A rolling seven-day budget, counted
+from the reflections table rather than a stored counter so it cannot drift out
+of step with what was actually spent, is what caps the one unbounded cost in
+the system — and the one path that sends content to a third party. Exhaustion
+returns `QUOTA_EXCEEDED` rather than `RATE_LIMITED`: a client that cannot tell
+them apart will either retry a spent budget forever or treat throttling as
+permanent.
+
 **Echo defaults to a stub provider.**
 `AI_PROVIDER=echo-stub` makes no network call. The entire Echo flow — consent
 gate, safety routing, encrypted storage of the response — is therefore testable

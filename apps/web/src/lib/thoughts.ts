@@ -109,6 +109,7 @@ export async function deleteThought(
 }
 
 export interface ReflectResult {
+  quota: { limit: number; remaining: number };
   content: string;
   safetyNotice: 'none' | 'support_resources';
   support: {

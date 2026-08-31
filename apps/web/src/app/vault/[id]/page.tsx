@@ -46,6 +46,7 @@ function ThoughtDetail() {
     content: string;
     safety: string;
     support: { label: string; resources: SupportResource[] } | null;
+    quota: { limit: number; remaining: number };
   } | null>(null);
   const [echoBusy, setEchoBusy] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState<DeleteChoice | null>(null);
@@ -91,9 +92,15 @@ function ThoughtDetail() {
         content: result.content,
         safety: result.safetyNotice,
         support: result.support ?? null,
+        quota: result.quota,
       });
-    } catch {
-      setError('Echo could not respond right now. Your thought is untouched.');
+    } catch (cause) {
+      const code = (cause as { code?: string }).code;
+      setError(
+        code === 'QUOTA_EXCEEDED'
+          ? (cause as { message: string }).message
+          : 'Echo could not respond right now. Your thought is untouched.',
+      );
     } finally {
       setEchoBusy(false);
     }
@@ -148,6 +155,13 @@ function ThoughtDetail() {
           <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-ink-soft">
             {echo.content}
           </p>
+          {echo.quota.remaining <= 5 && (
+            <p className="mt-4 text-xs text-ink-faint">
+              {echo.quota.remaining === 0
+                ? 'That was your last reflection this week.'
+                : `${echo.quota.remaining} reflections left this week.`}
+            </p>
+          )}
         </div>
       )}
 

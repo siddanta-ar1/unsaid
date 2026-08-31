@@ -1,9 +1,10 @@
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
-import { and, eq } from 'drizzle-orm';
+import { and, eq, gte, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import { ReflectRequest, ReflectResponse, toDurationBucket } from '@unsaid/types';
 import { getDatabase } from '../db/client.js';
 import { consents, reflections, thoughts } from '../db/schema.js';
+import { loadConfig } from '../lib/config.js';
 import { currentUserId, requireAuth } from '../lib/auth.js';
 import { AppError } from '../lib/errors.js';
 import { getReflectionProvider } from '../lib/ai/index.js';
@@ -62,6 +63,35 @@ export const echoRoutes: FastifyPluginAsyncZod = async (app) => {
         throw AppError.consentRequired('AI reflection');
       }
 
+      /*
+       * The weekly budget, checked before the provider is called rather than
+       * after. Echo is the only unbounded cost in the system, and a bill is
+       * discovered too late by definition — the hourly rate limit alone still
+       * permits well over a thousand calls a week per user.
+       *
+       * Counted from the reflections table over a rolling seven days rather
+       * than a stored counter, so it cannot drift out of step with what was
+       * actually spent.
+       */
+      const quota = loadConfig().ECHO_WEEKLY_QUOTA;
+      const [usage] = await db
+        .select({ used: sql<number>`count(*)::int` })
+        .from(reflections)
+        .innerJoin(thoughts, eq(thoughts.id, reflections.thoughtId))
+        .where(
+          and(
+            eq(thoughts.userId, userId),
+            gte(reflections.createdAt, new Date(Date.now() - 7 * 86_400_000)),
+          ),
+        );
+
+      if ((usage?.used ?? 0) >= quota) {
+        throw new AppError(
+          'QUOTA_EXCEEDED',
+          'You have used all of this week\u2019s reflections. Your memories are unaffected, and this resets in a few days.',
+        );
+      }
+
       const provider = getReflectionProvider();
       const startedAt = Date.now();
 
@@ -117,6 +147,7 @@ export const echoRoutes: FastifyPluginAsyncZod = async (app) => {
           : null;
 
       return {
+        quota: { limit: quota, remaining: Math.max(0, quota - (usage?.used ?? 0) - 1) },
         reflectionId: record.id,
         content: result.content,
         modelVersion: result.modelVersion,
