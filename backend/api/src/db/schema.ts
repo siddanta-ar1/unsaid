@@ -243,6 +243,23 @@ export const feedback = pgTable('feedback', {
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });
 
+/**
+ * The waitlist. The only table in this system that holds an email address, and
+ * it is deliberately unconnected to any vault — signing up here tells us
+ * nothing about what anyone writes, and a vault owner is not discoverable from
+ * their address.
+ */
+export const waitlist = pgTable(
+  'waitlist',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    email: text('email').notNull(),
+    source: text('source'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex('waitlist_email_idx').on(t.email)],
+);
+
 export const schema = {
   users,
   objects,
@@ -255,6 +272,7 @@ export const schema = {
   securityEvents,
   analyticsEvents,
   feedback,
+  waitlist,
 };
 
 export type { bytea };

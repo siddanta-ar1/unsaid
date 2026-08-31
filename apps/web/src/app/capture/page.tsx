@@ -96,7 +96,7 @@ function CaptureScreen() {
     setText('');
     setAudio(null);
     chunksRef.current = [];
-    router.push('/');
+    router.push('/app');
   }, [router]);
 
   const keepPrivately = useCallback(async () => {
@@ -132,7 +132,7 @@ function CaptureScreen() {
           </button>
           <button
             type="button"
-            onClick={() => router.push('/')}
+            onClick={() => router.push('/app')}
             className="rounded-xl border border-line px-6 py-4 text-ink"
           >
             Done

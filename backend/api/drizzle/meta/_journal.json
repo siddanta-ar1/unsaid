@@ -15,6 +15,13 @@
       "when": 1788111578987,
       "tag": "0001_signals",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1788111911033,
+      "tag": "0002_waitlist",
+      "breakpoints": true
     }
   ]
 }

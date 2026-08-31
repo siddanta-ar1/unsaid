@@ -1,0 +1,43 @@
+# Fly.io deployment for the API.
+#
+# An always-on container rather than serverless: the Postgres pool and the S3
+# signing client both behave better with a warm process, and this is one small
+# service with no bursty traffic to justify the tradeoff.
+#
+# Set secrets before the first deploy — they are never in this file:
+#   fly secrets set DATABASE_URL=... SESSION_SECRET=... \
+#     S3_ENDPOINT=... S3_BUCKET=... S3_ACCESS_KEY_ID=... S3_SECRET_ACCESS_KEY=...
+
+app = "unsaid-api"
+primary_region = "sin"   # Singapore: closest Fly region to Nepal.
+
+[build]
+  dockerfile = "backend/api/Dockerfile"
+
+[env]
+  NODE_ENV = "production"
+  PORT = "3011"
+  HOST = "0.0.0.0"
+  LOG_LEVEL = "info"
+  S3_FORCE_PATH_STYLE = "false"   # R2 uses virtual-hosted style.
+  SOLANA_NETWORK = "devnet"
+
+[http_service]
+  internal_port = 3011
+  force_https = true
+  auto_stop_machines = "suspend"
+  auto_start_machines = true
+  # One machine always warm: a cold start during a late-night capture is
+  # exactly the moment not to make someone wait.
+  min_machines_running = 1
+
+  [[http_service.checks]]
+    interval = "30s"
+    timeout = "5s"
+    grace_period = "20s"
+    method = "GET"
+    path = "/ready"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "512mb"

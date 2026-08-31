@@ -23,7 +23,7 @@ export function Shell({
   return (
     <div className="mx-auto flex min-h-dvh w-full max-w-2xl flex-col px-6">
       <header className="flex items-baseline justify-between py-8">
-        <Link href="/" className="font-serif text-lg tracking-wide text-ink">
+        <Link href="/app" className="font-serif text-lg tracking-wide text-ink">
           UNSAID
         </Link>
         <nav className="flex gap-6 text-sm text-ink-soft">

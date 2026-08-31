@@ -3,7 +3,7 @@ import { and, gte, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import { AnalyticsEvent } from '@unsaid/types';
 import { getDatabase } from '../db/client.js';
-import { analyticsEvents, feedback } from '../db/schema.js';
+import { analyticsEvents, feedback, waitlist } from '../db/schema.js';
 import { AppError } from '../lib/errors.js';
 import { FEEDBACK_LIMIT } from '../lib/rate-limits.js';
 import { requireAuth } from '../lib/auth.js';
@@ -98,6 +98,41 @@ export const signalRoutes: FastifyPluginAsyncZod = async (app) => {
       });
 
       return reply.status(202).send({ received: true });
+    },
+  );
+
+  /**
+   * Waitlist signup.
+   *
+   * The only place we accept an email address, and it is never joined to a
+   * vault: someone on this list is not discoverable as a user, and a user is
+   * not discoverable from their address.
+   */
+  app.post(
+    '/v1/signals/waitlist',
+    {
+      config: { rateLimit: FEEDBACK_LIMIT },
+      schema: {
+        body: z.object({
+          email: z.email().max(320),
+          source: z.string().max(64).optional(),
+        }),
+        response: { 202: z.object({ joined: z.boolean() }) },
+      },
+    },
+    async (request, reply) => {
+      const db = getDatabase();
+      const email = request.body.email.trim().toLowerCase();
+
+      // Idempotent: signing up twice is a no-op, and the response is identical
+      // either way so the endpoint cannot be used to test whether an address is
+      // already on the list.
+      await db
+        .insert(waitlist)
+        .values({ email, source: request.body.source ?? null })
+        .onConflictDoNothing({ target: waitlist.email });
+
+      return reply.status(202).send({ joined: true });
     },
   );
 

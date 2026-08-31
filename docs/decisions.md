@@ -104,6 +104,14 @@ mounted in the root layout so settings and the proof panel share one selection,
 but it opens no connection and requests no permission until the user presses
 Connect. A signature is requested only when anchoring, never on page load.
 
+## Operational record
+
+- **Backup restore drill passed 2026-08-31** via `./scripts/restore-drill.sh`,
+  against local Postgres: dump taken, restored into a scratch database, all 12
+  tables present, row counts matched, unique indexes intact, and no wrapped key
+  came back empty. Re-run monthly and after every schema change — and once
+  against production before the pilot.
+
 ## Verified in this implementation
 
 - Crypto envelope: unit tests including tamper detection, IV reuse, key
@@ -120,6 +128,20 @@ Connect. A signature is requested only when anchoring, never on page load.
 - Solana client: PDA determinism, instruction layout, account decoding.
 
 ## Not yet done
+
+- **Production deployment.** Every config is written and the container image
+  builds locally, but Supabase, Cloudflare R2, Fly and Vercel all need your
+  accounts. `docs/deployment.md` marks each step that needs a credential; the
+  rest is done.
+
+- **Crisis numbers have not been dialled.** Every region in `crisis.ts` carries
+  `verifiedOn: null` deliberately, and `unverifiedRegions()` is the launch gate.
+  Publishing a dead crisis line is worse than publishing none, so a date goes in
+  only after a human has actually called the number.
+
+- **Legal review.** The privacy policy and terms are derived from what the code
+  does rather than a template, but neither has been read by a lawyer. Nepal
+  Privacy Act 2075 review is required before launch.
 
 - **On-chain deploy and soak test.** The program builds to BPF and the client
   builds a real, signable transaction against it, but nothing has been submitted

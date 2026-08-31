@@ -47,7 +47,7 @@ function VaultList() {
         <p className="mt-3 text-sm text-ink-soft">
           Whatever you keep will appear here, readable only on a device holding your phrase.
         </p>
-        <Link href="/" className="mt-8 self-start rounded-xl bg-ink px-6 py-3 text-paper">
+        <Link href="/app" className="mt-8 self-start rounded-xl bg-ink px-6 py-3 text-paper">
           Say something
         </Link>
       </div>

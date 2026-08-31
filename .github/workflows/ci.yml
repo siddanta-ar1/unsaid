@@ -85,6 +85,16 @@ jobs:
           fi
           echo "No content-shaped columns in the schema."
 
+      # The crisis numbers must have been dialled by a human before launch.
+      # This stays failing until someone sets verifiedOn, which is the point.
+      - name: Warn on unverified crisis resources
+        continue-on-error: true
+        run: |
+          if grep -q "verifiedOn: null" backend/api/src/lib/ai/crisis.ts; then
+            echo "::warning::Crisis resources have not been verified by dialling them."
+            echo "Set verifiedOn only after someone has actually called each number."
+          fi
+
       - name: Assert no plaintext logging
         run: |
           if grep -rnE "log\.(info|warn|error|debug)\([^)]*\b(content|plaintext|transcript)\b" \
