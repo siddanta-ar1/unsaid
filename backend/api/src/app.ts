@@ -55,9 +55,15 @@ export async function buildApp() {
     // An uptime monitor polling on a schedule must never be throttled: a
     // rate-limited health check reports an outage that is not happening.
     allowList: (request) => UNLIMITED_ROUTES.includes(request.url.split('?')[0] as string),
-    errorResponseBuilder: (request) => ({
-      error: { code: 'RATE_LIMITED', message: 'Too many requests.', requestId: request.id },
-    }),
+    /*
+     * Returns an AppError rather than a plain envelope. @fastify/rate-limit
+     * throws whatever this returns verbatim, so a bare object reaches the error
+     * handler with no status attached and falls through to the 500 catch-all —
+     * telling a throttled client the server is broken rather than that they
+     * should slow down. An AppError carries its own status and is rendered by
+     * the branch that already exists.
+     */
+    errorResponseBuilder: () => new AppError('RATE_LIMITED', 'Too many requests.'),
   });
 
   /**
