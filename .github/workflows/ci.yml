@@ -36,6 +36,12 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
+      # Blueprint §20.3. A dependency advisory is the one class of flaw that
+      # appears without anyone changing a line of our code, so this gate has to
+      # run on every build rather than being reviewed occasionally.
+      - name: Audit dependencies
+        run: pnpm audit --audit-level moderate
+
       # MinIO stands in for R2; both speak the same S3 API.
       - name: Start object storage
         run: |
