@@ -24,11 +24,18 @@ function loadDotEnv(path = '.env'): Record<string, string> {
 }
 
 export default defineConfig({
+  esbuild: { jsx: 'automatic' },
+  resolve: {
+    alias: { '@': new URL('./apps/web/src', import.meta.url).pathname },
+  },
   test: {
     // Node 20's global WebCrypto is the same SubtleCrypto implementation the
     // browser exposes, so crypto tests run identically in both.
     environment: 'node',
-    include: ['**/src/**/*.test.ts', '**/tests/**/*.test.ts'],
+    // Component tests need a DOM; everything else is faster without one.
+    environmentMatchGlobs: [['apps/web/src/components/**', 'jsdom']],
+    setupFiles: ['./apps/web/vitest.setup.ts'],
+    include: ['**/src/**/*.test.ts', '**/src/**/*.test.tsx', '**/tests/**/*.test.ts'],
     exclude: ['**/node_modules/**', '**/dist/**'],
     env: loadDotEnv(),
     // Integration tests share one Postgres and one bucket; run them serially.
