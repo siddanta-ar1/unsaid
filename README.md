@@ -88,13 +88,26 @@ is re-uploaded, and an existing recovery kit keeps working.
 ## Testing
 
 ```bash
-pnpm test          # crypto unit tests + API integration tests + Solana client
+pnpm test               # 161 tests: crypto, API, components, Solana client
 cargo check -p unsaid   # the Anchor program
+./scripts/restore-drill.sh   # prove a backup actually restores
+node scripts/scan-secrets.mjs --all   # also runs on every commit
 ```
 
 The integration suite runs against the real Postgres and MinIO from
 `infra/docker-compose.yml` rather than mocks — that is what lets it assert the
 privacy invariant against actual stored bytes.
+
+A few suites are worth knowing about:
+
+| Suite | What it holds |
+|---|---|
+| `packages/crypto/src/vault.test.ts` | A forgotten passphrase is survivable |
+| `backend/api/tests/flow.test.ts` | A canary reaches neither DB, storage nor logs |
+| `backend/api/tests/signals.test.ts` | Measuring cannot become surveillance |
+| `backend/api/tests/rate-limits.test.ts` | The budgets actually trip, with a 429 |
+| `components/RecoveryKit.test.tsx` | The one screen whose failure is unrecoverable |
+| `lib/zip.test.ts` | Exports open in tools that are not ours |
 
 ## The encryption model
 
@@ -123,6 +136,12 @@ owned it, while revealing nothing about its content and being irreversible.
 
 Anchoring is optional. A user who never connects a wallet has a fully working
 vault and no on-chain presence at all.
+
+## Shipping
+
+- `docs/deployment.md` — every step, with the ones needing an account marked.
+- `docs/pilot-runbook.md` — how to run the first cohort so it yields an answer.
+- `docs/decisions.md` — judgement calls, and what is still open.
 
 ## What this is not
 
