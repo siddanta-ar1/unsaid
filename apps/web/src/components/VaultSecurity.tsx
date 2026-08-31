@@ -76,8 +76,8 @@ export function VaultSecurity() {
         className="flex flex-col gap-3 rounded-xl border border-line bg-paper-raised p-6"
       >
         <p className="text-sm leading-relaxed text-ink-soft">
-          Changing your phrase re-locks your vault. Your memories are not re-encrypted or
-          re-uploaded, and your recovery kit keeps working.
+          Changing your phrase re-locks your vault and signs out every other device. Your
+          memories are not re-encrypted or re-uploaded, and your recovery kit keeps working.
         </p>
 
         <input
@@ -102,7 +102,8 @@ export function VaultSecurity() {
         {phraseError && <p className="text-sm text-ember">{phraseError}</p>}
         {phraseState === 'done' && (
           <p className="text-sm text-ink-soft" aria-live="polite">
-            Changed. Your old phrase no longer opens this vault.
+            Changed. Your old phrase no longer opens this vault, and anywhere else you were
+            signed in has been signed out.
           </p>
         )}
 
@@ -145,7 +146,7 @@ export function VaultSecurity() {
           <>
             <p className="text-sm leading-relaxed text-ink-soft">
               Replace your recovery kit if you think someone else has seen it. The old code stops
-              working immediately.
+              working immediately, and every other device is signed out.
             </p>
             {kitError && <p className="mt-3 text-sm text-ember">{kitError}</p>}
             <button

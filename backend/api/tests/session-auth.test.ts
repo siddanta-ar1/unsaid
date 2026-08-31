@@ -197,3 +197,87 @@ describe('what a session without proof cannot do', () => {
     expect(res.json().thought.status).toBe('active');
   });
 });
+
+describe('changing a passphrase ends other sessions', () => {
+  it('stops a token issued before the change', async () => {
+    const { deriveLoginProof, changePassphrase } = await import('@unsaid/crypto');
+
+    // Someone else is signed in — the situation a passphrase change exists to end.
+    const intruder = await app.inject({
+      method: 'POST',
+      url: '/v1/identity/login',
+      payload: { userId: victimId, proof: await deriveLoginProof(victimVault.vaultKey) },
+    });
+    const intruderToken = intruder.json().token;
+
+    // It works right now.
+    const before = await app.inject({
+      method: 'GET',
+      url: '/v1/thoughts',
+      headers: { authorization: `Bearer ${intruderToken}` },
+    });
+    expect(before.statusCode).toBe(200);
+
+    // The owner changes their phrase.
+    const rewrapped = await changePassphrase(victimVault.vaultKey, 'a brand new phrase entirely');
+    const rotated = await app.inject({
+      method: 'POST',
+      url: '/v1/identity/rotate',
+      headers: { authorization: `Bearer ${victimToken}` },
+      payload: { passphrase: rewrapped },
+    });
+    expect(rotated.statusCode).toBe(200);
+
+    // The other session is now dead — including for the destructive routes.
+    const after = await app.inject({
+      method: 'GET',
+      url: '/v1/thoughts',
+      headers: { authorization: `Bearer ${intruderToken}` },
+    });
+    expect(after.statusCode).toBe(401);
+
+    const destructive = await app.inject({
+      method: 'DELETE',
+      url: `/v1/thoughts/${thoughtId}`,
+      headers: { authorization: `Bearer ${intruderToken}` },
+      payload: { mode: 'forget' },
+    });
+    expect(destructive.statusCode).toBe(401);
+
+    // And the owner is not thrown out of the tab they were sitting in.
+    victimToken = rotated.json().token;
+    const owner = await app.inject({
+      method: 'GET',
+      url: '/v1/thoughts',
+      headers: { authorization: `Bearer ${victimToken}` },
+    });
+    expect(owner.statusCode).toBe(200);
+  });
+
+  it('stops every token once a vault is deleted', async () => {
+    const { deriveLoginProof } = await import('@unsaid/crypto');
+    const gone = await createVault('a vault that will be deleted');
+    const reg = await app.inject({
+      method: 'POST',
+      url: '/v1/identity/guest',
+      payload: {
+        passphrase: gone.passphrase,
+        recovery: gone.recovery,
+        loginProof: gone.loginProof,
+      },
+    });
+    const account = reg.json();
+    void (await deriveLoginProof(gone.vaultKey));
+
+    await getDatabase().delete(users).where(eq(users.id, account.userId));
+
+    // The token is still cryptographically valid; the epoch lookup is what
+    // stops it, so a deleted vault's sessions die immediately.
+    const res = await app.inject({
+      method: 'GET',
+      url: '/v1/thoughts',
+      headers: { authorization: `Bearer ${account.token}` },
+    });
+    expect(res.statusCode).toBe(401);
+  });
+});

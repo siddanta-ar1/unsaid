@@ -454,6 +454,10 @@ describe('recovery, end to end', () => {
     });
     expect(rotate.statusCode).toBe(200);
 
+    // Rotation ends every session issued before it, so the caller adopts the
+    // replacement token it hands back — exactly what the browser client does.
+    const rotatedToken = rotate.json().token;
+
     // The new phrase now opens the vault, and the memory written before the
     // reset is still readable.
     const after = await app.inject({ method: 'GET', url: `/v1/identity/unlock/${account.userId}` });
@@ -465,7 +469,7 @@ describe('recovery, end to end', () => {
     const fetched = await app.inject({
       method: 'GET',
       url: `/v1/thoughts/${thoughtId}`,
-      headers: { authorization: `Bearer ${account.token}` },
+      headers: { authorization: `Bearer ${rotatedToken}` },
     });
     const { thought } = fetched.json();
     const ciphertext = new Uint8Array(await (await fetch(thought.downloadUrl)).arrayBuffer());

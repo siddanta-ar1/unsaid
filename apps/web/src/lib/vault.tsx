@@ -150,38 +150,46 @@ export function VaultProvider({ children }: { children: ReactNode }) {
       setKeyVersion(material.keyVersion);
 
       const rewrapped = await changePassphrase(vaultKey, newPassphrase);
-      await apiFetch('/v1/identity/rotate', {
+      const rotated = await apiFetch<{ token: string }>('/v1/identity/rotate', {
         method: 'POST',
         token: result.token,
         body: { passphrase: rewrapped },
       });
+
+      // Rotation ends every session issued before it, including the one we
+      // were just handed — adopt the replacement or the next request 401s.
+      startSession(result.userId, rotated.token, vaultKey);
     },
     [fetchMaterial, startSession],
   );
 
   const setPassphrase = useCallback(
     async (newPassphrase: string) => {
-      if (!key || !token) throw new Error('The vault must be unlocked to change its phrase.');
+      if (!key || !token || !userId) {
+        throw new Error('The vault must be unlocked to change its phrase.');
+      }
       const rewrapped = await changePassphrase(key, newPassphrase);
-      await apiFetch('/v1/identity/rotate', {
+      const rotated = await apiFetch<{ token: string }>('/v1/identity/rotate', {
         method: 'POST',
         token,
         body: { passphrase: rewrapped },
       });
+      startSession(userId, rotated.token, key);
     },
-    [key, token],
+    [key, token, userId, startSession],
   );
 
   const reissueRecoveryKit = useCallback(async () => {
-    if (!key || !token) throw new Error('The vault must be unlocked to reissue a kit.');
+    if (!key || !token || !userId) throw new Error('The vault must be unlocked to reissue a kit.');
     const reissued = await regenerateRecoveryKit(key);
-    await apiFetch('/v1/identity/rotate', {
+    const rotated = await apiFetch<{ token: string }>('/v1/identity/rotate', {
       method: 'POST',
       token,
       body: { recovery: reissued.recovery },
     });
+    startSession(userId, rotated.token, key);
     return reissued.recoveryCode;
-  }, [key, token]);
+  }, [key, token, userId, startSession]);
 
   const acknowledgeRecoveryCode = useCallback(() => setPendingRecoveryCode(null), []);
 

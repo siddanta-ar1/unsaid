@@ -57,7 +57,16 @@ export const RotateVaultKeyRequest = z.object({
   passphrase: WrappedVaultKey.optional(),
   recovery: WrappedVaultKey.optional(),
 });
-export const RotateVaultKeyResponse = z.object({ updatedAt: Iso8601 });
+/**
+ * Rotation ends every other session, so the caller is handed a fresh token —
+ * being signed out of the tab you are sitting in, by an action you just took,
+ * reads as a failure rather than a security feature.
+ */
+export const RotateVaultKeyResponse = z.object({
+  updatedAt: Iso8601,
+  token: z.string(),
+  expiresAt: Iso8601,
+});
 
 /* ------------------------------------------------------------ capture flow */
 

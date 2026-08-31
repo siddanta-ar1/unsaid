@@ -65,6 +65,14 @@ export const users = pgTable(
      */
     loginProof: text('login_proof'),
 
+    /**
+     * Bumped whenever existing sessions must stop working — today, changing a
+     * passphrase or reissuing a recovery kit. Tokens carry the epoch they were
+     * issued under, so an old one is rejected without any server-side session
+     * store to maintain.
+     */
+    sessionEpoch: integer('session_epoch').notNull().default(1),
+
     keyVersion: smallint('key_version').notNull().default(1),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     lastSeenAt: timestamp('last_seen_at', { withTimezone: true }).notNull().defaultNow(),

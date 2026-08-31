@@ -29,6 +29,13 @@
       "when": 1788146444055,
       "tag": "0003_login_proof",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1788167995225,
+      "tag": "0004_session_epoch",
+      "breakpoints": true
     }
   ]
 }

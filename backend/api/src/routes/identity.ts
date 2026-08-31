@@ -77,7 +77,7 @@ export const identityRoutes: FastifyPluginAsyncZod = async (app) => {
         .returning({ id: users.id });
       if (!created) throw AppError.internal();
 
-      const session = await issueSession(created.id);
+      const session = await issueSession(created.id, 1);
       return reply.status(201).send({
         userId: created.id,
         token: session.token,
@@ -149,7 +149,7 @@ export const identityRoutes: FastifyPluginAsyncZod = async (app) => {
     async (request) => {
       const db = getDatabase();
       const [user] = await db
-        .select({ id: users.id, loginProof: users.loginProof })
+        .select({ id: users.id, loginProof: users.loginProof, epoch: users.sessionEpoch })
         .from(users)
         .where(eq(users.id, request.body.userId))
         .limit(1);
@@ -161,7 +161,7 @@ export const identityRoutes: FastifyPluginAsyncZod = async (app) => {
       }
 
       await db.update(users).set({ lastSeenAt: new Date() }).where(eq(users.id, user.id));
-      const session = await issueSession(user.id);
+      const session = await issueSession(user.id, user.epoch);
       return { userId: user.id, token: session.token, expiresAt: session.expiresAt.toISOString() };
     },
   );
@@ -221,8 +221,22 @@ export const identityRoutes: FastifyPluginAsyncZod = async (app) => {
         throw new AppError('VALIDATION_FAILED', 'Nothing to rotate.');
       }
 
+      const [current] = await db
+        .select({ epoch: users.sessionEpoch })
+        .from(users)
+        .where(eq(users.id, userId))
+        .limit(1);
+      if (!current) throw AppError.authRequired();
+
       const now = new Date();
-      const changes: Record<string, unknown> = {};
+      /*
+       * Every existing token stops working. Changing a passphrase because
+       * someone may have seen it is pointless if the session they already hold
+       * keeps full access — including deleting and forgetting memories — for
+       * the rest of the token's thirty days.
+       */
+      const nextEpoch = current.epoch + 1;
+      const changes: Record<string, unknown> = { sessionEpoch: nextEpoch };
 
       if (passphrase) {
         // The account lookup follows the passphrase salt, so it moves too —
@@ -250,7 +264,14 @@ export const identityRoutes: FastifyPluginAsyncZod = async (app) => {
         actorType: 'user',
       });
 
-      return { updatedAt: now.toISOString() };
+      // The caller keeps working: being signed out of the tab you are sitting
+      // in, as a result of an action you just took, reads as a failure.
+      const session = await issueSession(userId, nextEpoch);
+      return {
+        updatedAt: now.toISOString(),
+        token: session.token,
+        expiresAt: session.expiresAt.toISOString(),
+      };
     },
   );
 };

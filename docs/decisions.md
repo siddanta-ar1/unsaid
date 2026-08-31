@@ -60,6 +60,18 @@ the vault. Login now requires a proof derived from the vault key itself, so the
 recovery kit reaches the same session and a passphrase change does not
 invalidate it.
 
+**Sessions carry an epoch, so a passphrase change revokes them.**
+Sessions are thirty-day JWTs with no server-side store. That is cheap and
+stateless, but it meant nothing could be revoked: someone holding a token when
+you changed your passphrase kept full access — including deleting and
+forgetting memories — for the rest of the month, which is precisely the
+situation a passphrase change exists to end. The settings copy claimed
+otherwise. Tokens now carry the epoch they were issued under and it is checked
+against the vault's current one, which costs a single indexed lookup per
+authenticated request and also kills a deleted vault's tokens immediately.
+Rotation hands the caller a fresh token, because being signed out of the tab
+you are sitting in, by an action you just took, reads as a failure.
+
 **The unlock endpoint is unauthenticated.**
 A returning user needs salts and wrapped keys before they can derive anything,
 so `/v1/identity/unlock/:id` cannot require a session. It is safe because it is
