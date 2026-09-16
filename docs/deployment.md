@@ -126,21 +126,25 @@ Three failures used to be possible and silent. They are now impossible.
 
 Each is covered by a test in `backend/api/src/lib/config.test.ts`.
 
-### Why the install is forced
+### Why the build filter ends in `...`
 
-`apps/web/vercel.json` runs `pnpm install --frozen-lockfile --force`. The
-`--force` is load-bearing on every deploy after the first.
+`apps/web/vercel.json` builds with `pnpm --filter "@unsaid/web..." build`. The
+trailing `...` means "and everything it depends on", and it is load-bearing.
 
-pnpm links workspace packages as symlinks — `node_modules/@unsaid/types` points
-at `packages/types`. Vercel restores `node_modules` from its build cache, and
-pnpm then reports `Already up to date` and does no work, but the symlinks do not
-survive the cache archive intact. The build fails with `Module not found: Can't
-resolve '@unsaid/types'` for every workspace import, on a commit that built
-cleanly the first time.
+`packages/*/package.json` resolve to `dist/`, and `dist/` is gitignored. A
+fresh clone therefore has the workspace sources but no built output, so
+`@unsaid/types`, `@unsaid/crypto` and `@unsaid/solana` cannot be resolved and
+the build fails with ten `Module not found` errors. `transpilePackages` does
+not help: resolution still goes through the `exports` field before any
+transpiling happens.
 
-The first deploy of a project always passes, because there is no cache to
-restore. The second fails. `--force` makes the install rebuild the modules
-directory regardless of what the cache handed it.
+Without `...`, only `@unsaid/web` builds. `backend/api/Dockerfile` already had
+this right — `pnpm --filter @unsaid/api... build`.
+
+This cannot be reproduced by a local build, because `dist/` is already on disk
+from earlier work, and `vercel deploy` from the CLI also hides it: that path
+respects `.vercelignore` rather than `.gitignore`, so it uploads the local
+`dist/` directories. It appears only on a build from a clean checkout.
 
 ## 5. Verify before inviting anyone
 
