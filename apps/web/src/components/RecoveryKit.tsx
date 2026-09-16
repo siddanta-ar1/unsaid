@@ -72,14 +72,14 @@ export function RecoveryKit({
         <button
           type="button"
           onClick={copy}
-          className="rounded-lg border border-line px-5 py-2.5 text-sm text-ink"
+          className="rounded-lg border border-field px-5 py-2.5 text-sm text-ink"
         >
           {copyState === 'copied' ? 'Copied' : 'Copy it'}
         </button>
       </div>
 
       {copyState === 'failed' && (
-        <p className="mt-3 text-sm text-ember">
+        <p role="alert" className="mt-3 text-sm text-ember">
           Your browser blocked the clipboard. Download it instead, or select the text above and copy
           it by hand.
         </p>
@@ -102,7 +102,7 @@ export function RecoveryKit({
         type="button"
         onClick={onAcknowledged}
         disabled={!confirmed || !saved}
-        className="mt-6 self-start rounded-lg bg-ink px-6 py-3 text-paper transition-opacity disabled:opacity-30"
+        className="mt-6 self-start rounded-lg border border-transparent bg-ink px-6 py-3 text-paper transition-colors disabled:cursor-not-allowed disabled:border-field disabled:bg-transparent disabled:text-ink-faint"
       >
         Continue
       </button>

@@ -97,6 +97,19 @@ export function UnlockGate({ children }: { children: ReactNode }) {
 
   const needsVaultId = mode === 'recover' || (mode === 'unlock' && !userId);
 
+  // Why the primary action is inert. Kept deliberately stable across the whole
+  // sub-minimum range so a live region announces it once, not on every keystroke.
+  const hintId = 'passphrase-requirement';
+  const errorId = 'unlock-error';
+  const hint =
+    passphrase.length >= MIN_PASSPHRASE
+      ? null
+      : mode === 'unlock'
+        ? passphrase.length > 0
+          ? `At least ${MIN_PASSPHRASE} characters.`
+          : null
+        : `At least ${MIN_PASSPHRASE} characters. A short sentence is easier to remember than a single word.`;
+
   return (
     <div className="flex flex-1 flex-col justify-center py-16">
       <h1 className="font-serif text-2xl text-ink">{copy.heading}</h1>
@@ -112,7 +125,9 @@ export function UnlockGate({ children }: { children: ReactNode }) {
             autoComplete="off"
             spellCheck={false}
             required
-            className="rounded-lg border border-line bg-paper-raised px-4 py-3 font-mono text-sm text-ink outline-none placeholder:font-sans placeholder:text-ink-faint focus:border-ember"
+            aria-invalid={error ? true : undefined}
+            aria-describedby={errorId}
+            className="rounded-lg border border-field bg-paper-raised px-4 py-3 font-mono text-sm text-ink outline-none placeholder:font-sans placeholder:text-ink-faint focus:border-ember"
           />
         )}
 
@@ -125,7 +140,9 @@ export function UnlockGate({ children }: { children: ReactNode }) {
             autoComplete="off"
             spellCheck={false}
             required
-            className="rounded-lg border border-line bg-paper-raised px-4 py-3 font-mono text-sm uppercase text-ink outline-none placeholder:font-sans placeholder:normal-case placeholder:text-ink-faint focus:border-ember"
+            aria-invalid={error ? true : undefined}
+            aria-describedby={errorId}
+            className="rounded-lg border border-field bg-paper-raised px-4 py-3 font-mono text-sm uppercase text-ink outline-none placeholder:font-sans placeholder:normal-case placeholder:text-ink-faint focus:border-ember"
           />
         )}
 
@@ -137,15 +154,24 @@ export function UnlockGate({ children }: { children: ReactNode }) {
           autoComplete={mode === 'unlock' ? 'current-password' : 'new-password'}
           minLength={MIN_PASSPHRASE}
           required
-          className="rounded-lg border border-line bg-paper-raised px-4 py-3 text-ink outline-none placeholder:text-ink-faint focus:border-ember"
+          aria-invalid={error ? true : undefined}
+          aria-describedby={`${hintId} ${errorId}`}
+          className="rounded-lg border border-field bg-paper-raised px-4 py-3 text-ink outline-none placeholder:text-ink-faint focus:border-ember"
         />
 
-        {error && <p className="text-sm text-ember">{error}</p>}
+        {/* Always present so assistive tech has a live region to watch. */}
+        <p id={hintId} aria-live="polite" className="text-xs leading-relaxed text-ink-faint empty:hidden">
+          {hint}
+        </p>
+
+        <p id={errorId} role="alert" className="text-sm text-ember empty:hidden">
+          {error}
+        </p>
 
         <button
           type="submit"
           disabled={busy || passphrase.length < MIN_PASSPHRASE}
-          className="rounded-lg bg-ink px-4 py-3 text-paper transition-opacity disabled:opacity-40"
+          className="rounded-lg border border-transparent bg-ink px-4 py-3 text-paper transition-colors disabled:cursor-not-allowed disabled:border-field disabled:bg-transparent disabled:text-ink-faint"
         >
           {busy ? 'Deriving your key…' : copy.action}
         </button>

@@ -77,7 +77,7 @@ export function WalletConnect() {
         ))}
       </ul>
 
-      {error && <p className="mt-4 text-sm text-ember">{error}</p>}
+      <p role="alert" className="mt-4 text-sm text-ember empty:hidden">{error}</p>
 
       <p className="mt-5 text-xs leading-relaxed text-ink-faint">
         Connecting on <span className="text-ink-soft">{network}</span>. UNSAID never asks for a
@@ -124,7 +124,7 @@ function WalletOption({
         type="button"
         onClick={handleConnect}
         disabled={isConnecting}
-        className="flex w-full items-center gap-3 rounded-lg border border-line px-4 py-3 text-left text-sm text-ink hover:opacity-80 disabled:opacity-40"
+        className="flex w-full items-center gap-3 rounded-lg border border-field px-4 py-3 text-left text-sm text-ink hover:opacity-80 disabled:cursor-not-allowed disabled:text-ink-faint"
       >
         {wallet.icon && (
           // eslint-disable-next-line @next/next/no-img-element -- data: URI from the wallet
@@ -172,7 +172,7 @@ function ConnectedWallet({
         type="button"
         onClick={handleDisconnect}
         disabled={isDisconnecting}
-        className="mt-5 text-sm text-ink-soft underline underline-offset-4 disabled:opacity-40"
+        className="mt-5 text-sm text-ink-soft underline underline-offset-4 disabled:cursor-not-allowed disabled:text-ink-faint"
       >
         {isDisconnecting ? 'Disconnecting…' : 'Disconnect'}
       </button>

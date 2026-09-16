@@ -37,7 +37,7 @@ function VaultList() {
       .catch(() => setError('Your vault could not be loaded right now.'));
   }, [token]);
 
-  if (error) return <p className="py-16 text-sm text-ember">{error}</p>;
+  if (error) return <p role="alert" className="py-16 text-sm text-ember">{error}</p>;
   if (!thoughts) return <p className="py-16 text-sm text-ink-faint">Opening your vault…</p>;
 
   if (thoughts.length === 0) {

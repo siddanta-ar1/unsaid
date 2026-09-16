@@ -87,7 +87,7 @@ export function VaultSecurity() {
           placeholder="New phrase"
           autoComplete="new-password"
           minLength={MIN_PASSPHRASE}
-          className="rounded-lg border border-line bg-paper px-4 py-3 text-ink outline-none placeholder:text-ink-faint focus:border-ember"
+          className="rounded-lg border border-field bg-paper px-4 py-3 text-ink outline-none placeholder:text-ink-faint focus:border-ember"
         />
         <input
           type="password"
@@ -95,11 +95,17 @@ export function VaultSecurity() {
           onChange={(event) => setConfirmPhrase(event.target.value)}
           placeholder="Type it again"
           autoComplete="new-password"
-          className="rounded-lg border border-line bg-paper px-4 py-3 text-ink outline-none placeholder:text-ink-faint focus:border-ember"
+          aria-invalid={mismatch ? true : undefined}
+          aria-describedby={mismatch ? 'phrase-mismatch' : undefined}
+          className="rounded-lg border border-field bg-paper px-4 py-3 text-ink outline-none placeholder:text-ink-faint focus:border-ember"
         />
 
-        {mismatch && <p className="text-sm text-ember">Those two do not match.</p>}
-        {phraseError && <p className="text-sm text-ember">{phraseError}</p>}
+        {mismatch && (
+          <p id="phrase-mismatch" role="alert" className="text-sm text-ember">
+            Those two do not match.
+          </p>
+        )}
+        <p role="alert" className="text-sm text-ember empty:hidden">{phraseError}</p>
         {phraseState === 'done' && (
           <p className="text-sm text-ink-soft" aria-live="polite">
             Changed. Your old phrase no longer opens this vault, and anywhere else you were
@@ -110,7 +116,7 @@ export function VaultSecurity() {
         <button
           type="submit"
           disabled={phraseState === 'busy' || phrase.length < MIN_PASSPHRASE || mismatch}
-          className="self-start rounded-lg bg-ink px-5 py-2.5 text-sm text-paper disabled:opacity-40"
+          className="self-start rounded-lg border border-transparent bg-ink px-5 py-2.5 text-sm text-paper disabled:cursor-not-allowed disabled:border-field disabled:bg-transparent disabled:text-ink-faint"
         >
           {phraseState === 'busy' ? 'Re-locking…' : 'Change my phrase'}
         </button>
@@ -148,12 +154,12 @@ export function VaultSecurity() {
               Replace your recovery kit if you think someone else has seen it. The old code stops
               working immediately, and every other device is signed out.
             </p>
-            {kitError && <p className="mt-3 text-sm text-ember">{kitError}</p>}
+            <p role="alert" className="mt-3 text-sm text-ember empty:hidden">{kitError}</p>
             <button
               type="button"
               onClick={reissue}
               disabled={kitBusy}
-              className="mt-5 rounded-lg border border-line px-5 py-2.5 text-sm text-ink disabled:opacity-40"
+              className="mt-5 rounded-lg border border-field px-5 py-2.5 text-sm text-ink disabled:cursor-not-allowed disabled:text-ink-faint"
             >
               {kitBusy ? 'Issuing…' : 'Issue a new recovery kit'}
             </button>

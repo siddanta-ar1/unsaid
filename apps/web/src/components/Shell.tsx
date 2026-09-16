@@ -39,7 +39,9 @@ export function Shell({
         </nav>
       </header>
       <main className="flex flex-1 flex-col">{children}</main>
-      <footer className="py-8 text-xs text-ink-faint">
+      {/* Bottom padding keeps the last line clear of the fixed feedback button,
+          which otherwise strikes through it on short viewports. */}
+      <footer className="pb-20 pt-8 text-xs text-ink-faint">
         {footer ?? 'Your thoughts are encrypted on this device before they are saved.'}
       </footer>
       <FeedbackButton screen={screen} />

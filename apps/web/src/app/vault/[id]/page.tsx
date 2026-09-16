@@ -177,7 +177,7 @@ function ThoughtDetail() {
             type="button"
             onClick={() => setShowConsent(true)}
             disabled={echoBusy}
-            className="self-start text-sm text-ink underline underline-offset-4 disabled:opacity-40"
+            className="self-start text-sm text-ink underline underline-offset-4 disabled:cursor-not-allowed disabled:text-ink-faint"
           >
             {echoBusy ? 'Echo is reading…' : 'Ask Echo to reflect on this'}
           </button>

@@ -59,7 +59,7 @@ export function FeedbackButton({ screen }: { screen: FeedbackScreen }) {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="fixed bottom-4 right-4 rounded-full border border-line bg-paper-raised px-4 py-2 text-xs text-ink-soft shadow-sm hover:text-ink"
+        className="fixed bottom-4 right-4 rounded-full border border-field bg-paper-raised px-4 py-2 text-xs text-ink-soft shadow-sm hover:text-ink"
       >
         Something felt off
       </button>
@@ -111,7 +111,7 @@ export function FeedbackButton({ screen }: { screen: FeedbackScreen }) {
                 onChange={(event) => setMessage(event.target.value)}
                 rows={3}
                 maxLength={1000}
-                className="mt-2 w-full resize-none rounded-lg border border-line bg-paper px-3 py-2 text-sm text-ink outline-none focus:border-ember"
+                className="mt-2 w-full resize-none rounded-lg border border-field bg-paper px-3 py-2 text-sm text-ink outline-none focus:border-ember"
               />
             </label>
 
@@ -121,14 +121,14 @@ export function FeedbackButton({ screen }: { screen: FeedbackScreen }) {
             </p>
 
             {state === 'error' && (
-              <p className="mt-3 text-sm text-ember">That did not send. Please try again.</p>
+              <p role="alert" className="mt-3 text-sm text-ember">That did not send. Please try again.</p>
             )}
 
             <div className="mt-6 flex gap-3">
               <button
                 type="submit"
                 disabled={!sentiment || state === 'sending'}
-                className="rounded-lg bg-ink px-5 py-2.5 text-sm text-paper disabled:opacity-40"
+                className="rounded-lg border border-transparent bg-ink px-5 py-2.5 text-sm text-paper disabled:cursor-not-allowed disabled:border-field disabled:bg-transparent disabled:text-ink-faint"
               >
                 {state === 'sending' ? 'Sending…' : 'Send'}
               </button>

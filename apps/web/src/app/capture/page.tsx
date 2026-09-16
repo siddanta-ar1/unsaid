@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useCallback, useEffect, useRef, useState } from 'react';
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Shell } from '@/components/Shell';
 import { UnlockGate } from '@/components/UnlockGate';
@@ -9,7 +9,7 @@ import { saveAudioThought, saveTextThought } from '@/lib/thoughts';
 import { track } from '@/lib/signals';
 import { toDurationBucket } from '@unsaid/types';
 
-type Stage = 'capturing' | 'deciding' | 'saving' | 'saved';
+type Stage = 'capturing' | 'deciding' | 'saving' | 'saved' | 'released';
 
 /** Prompts for the "I do not know" path — open questions, never diagnostic. */
 const GUIDED_PROMPTS = [
@@ -33,14 +33,29 @@ function CaptureScreen() {
   const [elapsed, setElapsed] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [savedId, setSavedId] = useState<string | null>(null);
+  const [releasedFrom, setReleasedFrom] = useState<'capturing' | 'deciding'>('capturing');
   const [prompt] = useState(
     () => GUIDED_PROMPTS[Math.floor(Math.random() * GUIDED_PROMPTS.length)] ?? '',
   );
 
+  const [silent, setSilent] = useState(false);
+
   const recorderRef = useRef<MediaRecorder | null>(null);
+  const meterRef = useRef<HTMLDivElement | null>(null);
+  const audioCtxRef = useRef<AudioContext | null>(null);
+  const frameRef = useRef<number | null>(null);
+  const silentSinceRef = useRef<number | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   // The recorder's onstop closure captures state at start; a ref stays current.
   const elapsedRef = useRef(0);
+
+  const stopMeter = useCallback(() => {
+    if (frameRef.current !== null) cancelAnimationFrame(frameRef.current);
+    frameRef.current = null;
+    void audioCtxRef.current?.close();
+    audioCtxRef.current = null;
+    silentSinceRef.current = null;
+  }, []);
 
   useEffect(() => {
     if (!recording) return;
@@ -56,8 +71,17 @@ function CaptureScreen() {
   useEffect(() => {
     return () => {
       recorderRef.current?.stream.getTracks().forEach((track) => track.stop());
+      stopMeter();
     };
-  }, []);
+  }, [stopMeter]);
+
+  // Hearing it back before deciding: committing to audio you cannot review is
+  // asking for a choice with the evidence withheld.
+  const audioUrl = useMemo(() => (audio ? URL.createObjectURL(audio) : null), [audio]);
+  useEffect(() => {
+    if (!audioUrl) return;
+    return () => URL.revokeObjectURL(audioUrl);
+  }, [audioUrl]);
 
   const startRecording = useCallback(async () => {
     setError(null);
@@ -67,6 +91,7 @@ function CaptureScreen() {
       chunksRef.current = [];
       recorder.ondataavailable = (event) => chunksRef.current.push(event.data);
       recorder.onstop = () => {
+        stopMeter();
         setAudio(new Blob(chunksRef.current, { type: recorder.mimeType }));
         stream.getTracks().forEach((audioTrack) => audioTrack.stop());
         track({
@@ -76,6 +101,38 @@ function CaptureScreen() {
         });
         setStage('deciding');
       };
+      // A timer proves the clock runs, not that the microphone hears anything.
+      // Drive the bar straight from the node so this costs no re-renders.
+      const ctx = new AudioContext();
+      const analyser = ctx.createAnalyser();
+      analyser.fftSize = 512;
+      ctx.createMediaStreamSource(stream).connect(analyser);
+      const samples = new Uint8Array(analyser.frequencyBinCount);
+      audioCtxRef.current = ctx;
+      setSilent(false);
+      const tick = () => {
+        analyser.getByteTimeDomainData(samples);
+        let sum = 0;
+        for (let i = 0; i < samples.length; i += 1) {
+          const d = ((samples[i] ?? 128) - 128) / 128;
+          sum += d * d;
+        }
+        const rms = Math.sqrt(sum / samples.length);
+        if (meterRef.current) {
+          meterRef.current.style.transform = `scaleX(${Math.min(1, rms * 3).toFixed(3)})`;
+        }
+        const now = performance.now();
+        if (rms < 0.01) {
+          silentSinceRef.current ??= now;
+          if (now - silentSinceRef.current > 4000) setSilent(true);
+        } else {
+          silentSinceRef.current = null;
+          setSilent(false);
+        }
+        frameRef.current = requestAnimationFrame(tick);
+      };
+      frameRef.current = requestAnimationFrame(tick);
+
       recorder.start();
       recorderRef.current = recorder;
       setRecording(true);
@@ -84,20 +141,46 @@ function CaptureScreen() {
     } catch {
       setError('Your microphone is not available. You can write instead.');
     }
-  }, []);
+  }, [stopMeter]);
 
   const stopRecording = useCallback(() => {
     recorderRef.current?.stop();
     setRecording(false);
   }, []);
 
-  /** "Let it go" — nothing was ever uploaded, so there is nothing to delete. */
-  const discard = useCallback(() => {
+  /**
+   * "Let it go" — nothing was ever uploaded, so there is nothing to delete.
+   *
+   * The words are held one screen longer than the decision, so a mis-tap is
+   * recoverable. Releasing a thought should be a decision, never an accident.
+   */
+  const release = useCallback(() => {
+    setReleasedFrom(stage === 'deciding' ? 'deciding' : 'capturing');
+    setStage('released');
+  }, [stage]);
+
+  const bringItBack = useCallback(() => setStage(releasedFrom), [releasedFrom]);
+
+  const leaveForGood = useCallback(() => {
     setText('');
     setAudio(null);
     chunksRef.current = [];
     router.push('/app');
   }, [router]);
+
+  // Nothing here has been uploaded, so a closed tab is the one way to lose a
+  // thought outright. Worth interrupting for.
+  const unsaved =
+    (text.trim().length > 0 || audio !== null) && stage !== 'saved' && stage !== 'released';
+  useEffect(() => {
+    if (!unsaved) return;
+    const warn = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = '';
+    };
+    window.addEventListener('beforeunload', warn);
+    return () => window.removeEventListener('beforeunload', warn);
+  }, [unsaved]);
 
   const keepPrivately = useCallback(async () => {
     if (!token || !key) return;
@@ -133,9 +216,37 @@ function CaptureScreen() {
           <button
             type="button"
             onClick={() => router.push('/app')}
-            className="rounded-xl border border-line px-6 py-4 text-ink"
+            className="rounded-xl border border-field px-6 py-4 text-ink"
           >
             Done
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (stage === 'released') {
+    return (
+      <div className="flex flex-1 flex-col justify-center py-16">
+        <h1 className="font-serif text-2xl text-ink">Let go.</h1>
+        <p className="mt-4 text-sm leading-relaxed text-ink-soft">
+          It was never uploaded, so there is nothing left to delete. It is still on this screen,
+          if you did not mean to.
+        </p>
+        <div className="mt-10 flex flex-col gap-3">
+          <button
+            type="button"
+            onClick={leaveForGood}
+            className="rounded-xl border border-transparent bg-ink px-6 py-4 text-paper"
+          >
+            Done
+          </button>
+          <button
+            type="button"
+            onClick={bringItBack}
+            className="rounded-xl border border-field px-6 py-4 text-ink"
+          >
+            Bring it back
           </button>
         </div>
       </div>
@@ -148,21 +259,28 @@ function CaptureScreen() {
     return (
       <div className="flex flex-1 flex-col justify-center py-16">
         <h1 className="font-serif text-2xl text-ink">What do you want to do with this?</h1>
-        {error && <p className="mt-4 text-sm text-ember">{error}</p>}
+        <p role="alert" className="mt-4 text-sm text-ember empty:hidden">
+          {error}
+        </p>
+        {audioUrl && (
+          <audio controls src={audioUrl} className="mt-6 w-full">
+            Your browser cannot play this recording.
+          </audio>
+        )}
         <div className="mt-10 flex flex-col gap-3">
           <button
             type="button"
             onClick={keepPrivately}
             disabled={stage === 'saving'}
-            className="rounded-xl bg-ink px-6 py-4 text-paper disabled:opacity-40"
+            className="rounded-xl border border-transparent bg-ink px-6 py-4 text-paper disabled:cursor-not-allowed disabled:border-field disabled:bg-transparent disabled:text-ink-faint"
           >
             {stage === 'saving' ? 'Encrypting…' : 'Keep it privately'}
           </button>
           <button
             type="button"
-            onClick={discard}
+            onClick={release}
             disabled={stage === 'saving'}
-            className="rounded-xl border border-line px-6 py-4 text-ink"
+            className="rounded-xl border border-field px-6 py-4 text-ink"
           >
             Let it go
           </button>
@@ -183,7 +301,23 @@ function CaptureScreen() {
             {String(Math.floor(elapsed / 60)).padStart(2, '0')}:
             {String(elapsed % 60).padStart(2, '0')}
           </p>
-          {error && <p className="text-sm text-ember">{error}</p>}
+          <p role="alert" className="text-sm text-ember empty:hidden">
+            {error}
+          </p>
+          {recording && (
+            <div className="flex w-full max-w-xs flex-col items-center gap-3">
+              <div aria-hidden="true" className="h-1 w-full overflow-hidden rounded-full bg-line">
+                <div
+                  ref={meterRef}
+                  className="h-full w-full origin-left scale-x-0 rounded-full bg-ember"
+                />
+              </div>
+              {/* A silent meter is ambiguous; a muted microphone should say so. */}
+              <p aria-live="polite" className="text-xs text-ember empty:hidden">
+                {silent ? 'No sound is reaching the microphone.' : ''}
+              </p>
+            </div>
+          )}
           {recording ? (
             <button
               type="button"
@@ -225,11 +359,11 @@ function CaptureScreen() {
                 setStage('deciding');
               }}
               disabled={text.trim().length === 0}
-              className="rounded-xl bg-ink px-6 py-3 text-paper disabled:opacity-30"
+              className="rounded-xl border border-transparent bg-ink px-6 py-3 text-paper disabled:cursor-not-allowed disabled:border-field disabled:bg-transparent disabled:text-ink-faint"
             >
               Done
             </button>
-            <button type="button" onClick={discard} className="px-6 py-3 text-sm text-ink-faint">
+            <button type="button" onClick={release} className="px-6 py-3 text-sm text-ink-faint">
               Discard
             </button>
           </div>

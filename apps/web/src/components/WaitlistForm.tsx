@@ -54,17 +54,17 @@ export function WaitlistForm() {
         placeholder="you@example.com"
         autoComplete="email"
         required
-        className="flex-1 rounded-lg border border-line bg-paper-raised px-4 py-3 text-ink outline-none placeholder:text-ink-faint focus:border-ember"
+        className="flex-1 rounded-lg border border-field bg-paper-raised px-4 py-3 text-ink outline-none placeholder:text-ink-faint focus:border-ember"
       />
       <button
         type="submit"
         disabled={state === 'sending'}
-        className="rounded-lg bg-ink px-5 py-3 text-paper disabled:opacity-40"
+        className="rounded-lg border border-transparent bg-ink px-5 py-3 text-paper disabled:cursor-not-allowed disabled:border-field disabled:bg-transparent disabled:text-ink-faint"
       >
         {state === 'sending' ? 'Adding…' : 'Keep me posted'}
       </button>
       {state === 'error' && (
-        <p className="text-sm text-ember sm:w-full">That did not go through. Please try again.</p>
+        <p role="alert" className="text-sm text-ember sm:w-full">That did not go through. Please try again.</p>
       )}
     </form>
   );

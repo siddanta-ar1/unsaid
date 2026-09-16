@@ -129,12 +129,12 @@ function AnchorAction({
         type="button"
         onClick={anchor}
         disabled={busy}
-        className="mt-4 rounded-lg bg-ink px-5 py-2.5 text-sm text-paper disabled:opacity-40"
+        className="mt-4 rounded-lg border border-transparent bg-ink px-5 py-2.5 text-sm text-paper disabled:cursor-not-allowed disabled:border-field disabled:bg-transparent disabled:text-ink-faint"
       >
         {confirming ? 'Approve in your wallet…' : busy ? 'Preparing…' : 'Anchor on Solana'}
       </button>
 
-      {error && <p className="mt-4 text-sm text-ember">{error}</p>}
+      <p role="alert" className="mt-4 text-sm text-ember empty:hidden">{error}</p>
 
       <p className="mt-4 text-xs leading-relaxed text-ink-faint">
         Signing with {shortenAddress(account.address)} on {network}. A small network fee applies.
