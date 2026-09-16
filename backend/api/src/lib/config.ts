@@ -57,6 +57,9 @@ const EnvSchema = z.object({
 
 export type Config = z.infer<typeof EnvSchema> & { isProduction: boolean };
 
+/** The vocabulary .env.example and the secret scanner both use for fillers. */
+const PLACEHOLDER = /dev[_-]?only|replace[_-]?me|change[_-]?me|placeholder|example|your[_-]?secret/i;
+
 let cached: Config | undefined;
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
@@ -76,6 +79,23 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     }
     if (config.SESSION_SECRET.length < 48) {
       throw new Error('SESSION_SECRET must be at least 48 characters in production.');
+    }
+    // The placeholder in .env.example is 51 characters, so length alone waves
+    // it through. A published signing secret forges every session there is,
+    // and it fails silently because the app starts perfectly well with it.
+    if (PLACEHOLDER.test(config.SESSION_SECRET)) {
+      throw new Error(
+        'SESSION_SECRET is still a development placeholder. ' +
+          'Generate a real one with `openssl rand -base64 48`.',
+      );
+    }
+    for (const [name, value] of [
+      ['DATABASE_URL', config.DATABASE_URL],
+      ['S3_ENDPOINT', config.S3_ENDPOINT],
+    ] as const) {
+      if (/localhost|127\.0\.0\.1/.test(value)) {
+        throw new Error(`${name} still points at localhost in production.`);
+      }
     }
   }
 

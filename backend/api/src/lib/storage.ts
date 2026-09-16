@@ -33,6 +33,16 @@ export class ObjectStorage {
       endpoint: config.S3_ENDPOINT,
       region: config.S3_REGION,
       forcePathStyle: config.S3_FORCE_PATH_STYLE,
+      // Since v3.729 the SDK adds CRC32 checksum parameters to every request,
+      // including pre-signed URLs. S3-compatible providers — R2 among them —
+      // reject or mis-validate those, and the failure only appears against the
+      // real bucket because MinIO happens to tolerate them.
+      //
+      // Nothing is lost by turning them off: every object here is AES-GCM with
+      // an authentication tag, so a corrupted upload fails to decrypt. The
+      // integrity guarantee is the envelope's, not the transport's.
+      requestChecksumCalculation: 'WHEN_REQUIRED',
+      responseChecksumValidation: 'WHEN_REQUIRED',
       credentials: {
         accessKeyId: config.S3_ACCESS_KEY_ID,
         secretAccessKey: config.S3_SECRET_ACCESS_KEY,

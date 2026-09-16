@@ -5,6 +5,38 @@ const isProduction = process.env.NODE_ENV === 'production';
 const API_ORIGIN = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3011';
 
 /**
+ * The CSP below is baked in at build time, and its defaults point at
+ * localhost. A production build with these unset therefore ships a page that
+ * loads perfectly and cannot reach its own API or upload a single byte —
+ * `connect-src` silently blocks both, and nothing surfaces until a real user
+ * tries to save a memory.
+ *
+ * Failing the build is the only honest option: there is no runtime recovery
+ * from a header that was already compiled in.
+ */
+function assertProductionOrigins(): void {
+  if (process.env.VERCEL_ENV !== 'production') return;
+
+  const required = {
+    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,
+    NEXT_PUBLIC_STORAGE_ORIGIN: process.env.NEXT_PUBLIC_STORAGE_ORIGIN,
+  };
+  const bad = Object.entries(required).filter(
+    ([, value]) => !value || value.includes('localhost') || value.startsWith('http://'),
+  );
+  if (bad.length > 0) {
+    throw new Error(
+      'Refusing to build for production with unusable origins.\n' +
+        bad.map(([name, value]) => `  ${name}=${value ?? '(unset)'}`).join('\n') +
+        '\n\nThese are compiled into the Content-Security-Policy. Set them with' +
+        '\n`vercel env add <NAME> production`, then redeploy.',
+    );
+  }
+}
+
+assertProductionOrigins();
+
+/**
  * Content Security Policy.
  *
  * The vault decrypts in this document, so for the lifetime of a page view the

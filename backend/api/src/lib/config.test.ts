@@ -44,7 +44,14 @@ describe('required configuration', () => {
 });
 
 describe('production hardening', () => {
-  const production = { ...VALID, NODE_ENV: 'production' };
+  const production = {
+    ...VALID,
+    NODE_ENV: 'production',
+    // Deliberately not the dev fixture's localhost: pointing production at a
+    // developer's machine is itself one of the failures under test below.
+    DATABASE_URL: 'postgres://user:pass@db.internal.net:5432/unsaid',
+    S3_ENDPOINT: 'https://acct.r2.cloudflarestorage.com',
+  };
 
   it('refuses a short session secret', () => {
     expect(() => loadConfig({ ...production, SESSION_SECRET: 'x'.repeat(40) })).toThrow(
@@ -67,6 +74,38 @@ describe('production hardening', () => {
   it('marks itself as production so environment-gated controls engage', () => {
     // HSTS, proxy trust and the secret-length floor all key off this.
     expect(loadConfig({ ...production }).isProduction).toBe(true);
+  });
+
+  it('refuses the placeholder shipped in .env.example', () => {
+    // 51 characters, so the length floor alone waves it straight through — and
+    // a published signing secret forges every session there is.
+    const placeholder = 'dev_only_secret_replace_me_with_48_bytes_of_entropy';
+    expect(placeholder.length).toBeGreaterThanOrEqual(48);
+    expect(() => loadConfig({ ...production, SESSION_SECRET: placeholder })).toThrow(
+      /placeholder/i,
+    );
+  });
+
+  it('refuses a database still pointed at the developer machine', () => {
+    expect(() =>
+      loadConfig({ ...production, DATABASE_URL: 'postgres://u:p@localhost:54332/unsaid' }),
+    ).toThrow(/localhost/i);
+  });
+
+  it('refuses storage still pointed at MinIO', () => {
+    expect(() => loadConfig({ ...production, S3_ENDPOINT: 'http://127.0.0.1:9010' })).toThrow(
+      /localhost/i,
+    );
+  });
+
+  it('leaves development alone, so local setup stays frictionless', () => {
+    expect(() =>
+      loadConfig({
+        ...VALID,
+        NODE_ENV: 'development',
+        SESSION_SECRET: 'dev_only_secret_replace_me_with_48_bytes_of_entropy',
+      }),
+    ).not.toThrow();
   });
 });
 

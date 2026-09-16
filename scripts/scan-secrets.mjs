@@ -23,10 +23,21 @@ const RULES = [
   { name: 'Slack token', pattern: /xox[abprs]-[A-Za-z0-9-]{10,}/ },
   { name: 'Google API key', pattern: /AIza[0-9A-Za-z_-]{35}/ },
   { name: 'Stripe secret key', pattern: /sk_live_[A-Za-z0-9]{20,}/ },
+  { name: 'Vercel access token', pattern: /vcp_[A-Za-z0-9]{20,}/ },
+  { name: 'Cloudflare API token', pattern: /cfat_[A-Za-z0-9_-]{20,}/ },
+  { name: 'Supabase access token', pattern: /sbp_(?:v\d_)?[A-Za-z0-9]{32,}/ },
+  { name: 'Supabase service role key', pattern: /eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}/ },
   {
     name: 'Solana keypair array',
     // A 64-byte secret key serialised as a JSON number array.
     pattern: /\[\s*(?:\d{1,3}\s*,\s*){63,}\d{1,3}\s*\]/,
+  },
+  {
+    name: 'Assigned secret literal, unquoted',
+    // The .env shape: KEY=value with no quotes. The rule below requires
+    // quotes, so without this the most likely leak of all walks through.
+    pattern:
+      /(?:secret|password|passwd|token|api[_-]?key|access[_-]?key|private[_-]?key)[A-Za-z0-9_]*[ \t]*=[ \t]*[A-Za-z0-9_\-.+/=]{24,}/i,
   },
   {
     name: 'Assigned secret literal',
@@ -38,7 +49,13 @@ const RULES = [
 ];
 
 /** Files whose whole purpose is to show the shape of configuration. */
-const ALLOWLISTED_PATHS = [/^\.env\.example$/, /^scripts\/scan-secrets\.mjs$/];
+const ALLOWLISTED_PATHS = [
+  /^\.env\.example$/,
+  /^scripts\/scan-secrets\.mjs$/,
+  // Its whole job is to prove credential-shaped strings get redacted, so it
+  // has to contain some. The values in it are filler, not live.
+  /^backend\/api\/src\/lib\/observability\.test\.ts$/,
+];
 
 /** Lines that are demonstrably not a live credential. */
 const ALLOWLISTED_LINES = [

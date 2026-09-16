@@ -40,3 +40,6 @@ next-env.d.ts
 # ─── Local noise ──────────────────────────────────────────────────────────
 .DS_Store
 *.log
+
+# Vercel CLI link state (project and org ids). Machine-local.
+.vercel

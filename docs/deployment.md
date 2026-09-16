@@ -47,6 +47,39 @@ Create a Cloudflare R2 bucket named `unsaid-private`.
 The storage adapter already speaks S3, so only the endpoint and credentials
 change between MinIO locally and R2 in production.
 
+**CORS is not optional.** The browser PUTs ciphertext straight to the bucket
+(`apps/web/src/lib/api.ts:48`), and it sends `content-type:
+application/octet-stream` — not a CORS-safelisted value, so every upload is
+preceded by a preflight. Without this policy the bucket rejects the preflight
+and no memory can ever be saved, while everything else looks healthy:
+
+```json
+[
+  {
+    "AllowedOrigins": ["https://unsaid.app", "https://<project>.vercel.app"],
+    "AllowedMethods": ["GET", "PUT"],
+    "AllowedHeaders": ["content-type"],
+    "MaxAgeSeconds": 3600
+  }
+]
+```
+
+List every origin that will serve the app, preview URLs included — the origin
+is matched exactly.
+
+**The S3 endpoint lags activation.** For several minutes after R2 is first
+enabled, `https://<account>.r2.cloudflarestorage.com` resolves but fails the
+TLS handshake with `alert 40` — the certificate has not been issued yet. The
+REST API works before the S3 endpoint does, so a bucket can exist while uploads
+still fail. Wait and retry rather than re-cutting credentials.
+
+**Checksums are disabled deliberately.** `backend/api/src/lib/storage.ts` sets
+`requestChecksumCalculation: 'WHEN_REQUIRED'`. Since v3.729 the AWS SDK adds
+CRC32 parameters to every request including pre-signed URLs, which R2 rejects.
+MinIO tolerates them, so the failure would appear only against the real bucket.
+Nothing is lost: objects are AES-GCM with an authentication tag, so integrity
+is the envelope's guarantee rather than the transport's.
+
 ## 3. API — **[needs your account]**
 
 ```bash
@@ -81,6 +114,18 @@ vercel --prod
 Security Policy's `connect-src`, and ciphertext uploads will be blocked by the
 browser without it.
 
+## What now refuses to deploy
+
+Three failures used to be possible and silent. They are now impossible.
+
+| Guard | Where | Stops |
+|---|---|---|
+| Production origins | `apps/web/next.config.ts` | A production build whose `NEXT_PUBLIC_API_URL` / `NEXT_PUBLIC_STORAGE_ORIGIN` are unset or `http://`. These are compiled into the CSP, so the old behaviour was a site that loaded perfectly and could not reach its own API. Only fires when `VERCEL_ENV=production`, so local builds and previews are untouched. |
+| Placeholder secret | `backend/api/src/lib/config.ts` | Booting production with the `SESSION_SECRET` from `.env.example`. It is 51 characters, so the `>=48` floor passed it — and a published signing secret forges every session there is. |
+| Localhost in production | `backend/api/src/lib/config.ts` | A production `DATABASE_URL` or `S3_ENDPOINT` still pointed at the developer's machine. |
+
+Each is covered by a test in `backend/api/src/lib/config.test.ts`.
+
 ## 5. Verify before inviting anyone
 
 ```bash
@@ -97,6 +142,17 @@ Then, in a fresh browser profile against the production URL:
 
 Step 4 is the one that matters. It is the only path a real user will take at
 their worst moment, and the only one nobody tests by accident.
+
+## Keeping credentials out of the repository
+
+`node scripts/scan-secrets.mjs --all` runs pre-commit and in CI. It knows the
+shapes of Vercel (`vcp_`) and Supabase (`sbp_`, and service-role JWTs) tokens,
+and it catches the unquoted `KEY=value` form that a `.env` file actually uses —
+the earlier rule only matched quoted values and would have missed it.
+
+Credentials belong in `fly secrets set` and `vercel env add`. Never in a file
+in this repository, and never pasted into a chat window: a token that has been
+in a transcript is a token to rotate, not a token to deploy with.
 
 ## Rotating a leaked secret
 
