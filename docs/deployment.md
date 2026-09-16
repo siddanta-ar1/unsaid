@@ -126,6 +126,22 @@ Three failures used to be possible and silent. They are now impossible.
 
 Each is covered by a test in `backend/api/src/lib/config.test.ts`.
 
+### Why the install is forced
+
+`apps/web/vercel.json` runs `pnpm install --frozen-lockfile --force`. The
+`--force` is load-bearing on every deploy after the first.
+
+pnpm links workspace packages as symlinks — `node_modules/@unsaid/types` points
+at `packages/types`. Vercel restores `node_modules` from its build cache, and
+pnpm then reports `Already up to date` and does no work, but the symlinks do not
+survive the cache archive intact. The build fails with `Module not found: Can't
+resolve '@unsaid/types'` for every workspace import, on a commit that built
+cleanly the first time.
+
+The first deploy of a project always passes, because there is no cache to
+restore. The second fails. `--force` makes the install rebuild the modules
+directory regardless of what the cache handed it.
+
 ## 5. Verify before inviting anyone
 
 ```bash
