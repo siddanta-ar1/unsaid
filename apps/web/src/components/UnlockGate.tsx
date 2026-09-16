@@ -17,6 +17,7 @@ const MIN_PASSPHRASE = 12;
 export function UnlockGate({ children }: { children: ReactNode }) {
   const {
     isUnlocked,
+    isRestored,
     userId,
     pendingRecoveryCode,
     createNewVault,
@@ -25,7 +26,14 @@ export function UnlockGate({ children }: { children: ReactNode }) {
     acknowledgeRecoveryCode,
   } = useVault();
 
-  const [mode, setMode] = useState<Mode>(userId ? 'unlock' : 'create');
+  /**
+   * Null means "whichever this device calls for". The stored vault id only
+   * arrives after mount, so the mode has to be derived on every render rather
+   * than frozen at the first one — an override is set only when the user picks
+   * a different way in.
+   */
+  const [chosenMode, setChosenMode] = useState<Mode | null>(null);
+  const mode: Mode = chosenMode ?? (userId ? 'unlock' : 'create');
   const [passphrase, setPassphrase] = useState('');
   const [recoveryCode, setRecoveryCode] = useState('');
   const [vaultId, setVaultId] = useState('');
@@ -45,6 +53,21 @@ export function UnlockGate({ children }: { children: ReactNode }) {
   }
 
   if (isUnlocked) return <>{children}</>;
+
+  /**
+   * One frame, before the stored session has been read back. Asking for a
+   * phrase here would mean guessing which phrase to ask for, and guessing
+   * wrong tells a returning user their vault does not exist.
+   */
+  if (!isRestored) {
+    return (
+      <div
+        className="flex flex-1 flex-col justify-center py-16"
+        aria-busy="true"
+        aria-label="Checking this device"
+      />
+    );
+  }
 
   async function submit(event: React.FormEvent) {
     event.preventDefault();
@@ -181,7 +204,7 @@ export function UnlockGate({ children }: { children: ReactNode }) {
         {mode !== 'create' && (
           <button
             type="button"
-            onClick={() => setMode('create')}
+            onClick={() => setChosenMode('create')}
             className="self-start text-ink-faint underline underline-offset-4 hover:text-ink-soft"
           >
             Start a new vault instead
@@ -190,7 +213,7 @@ export function UnlockGate({ children }: { children: ReactNode }) {
         {mode !== 'unlock' && (
           <button
             type="button"
-            onClick={() => setMode('unlock')}
+            onClick={() => setChosenMode('unlock')}
             className="self-start text-ink-faint underline underline-offset-4 hover:text-ink-soft"
           >
             I have a vault and remember my phrase
@@ -199,7 +222,7 @@ export function UnlockGate({ children }: { children: ReactNode }) {
         {mode !== 'recover' && (
           <button
             type="button"
-            onClick={() => setMode('recover')}
+            onClick={() => setChosenMode('recover')}
             className="self-start text-ink-faint underline underline-offset-4 hover:text-ink-soft"
           >
             I lost my phrase

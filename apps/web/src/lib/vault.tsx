@@ -1,6 +1,14 @@
 'use client';
 
-import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from 'react';
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from 'react';
 import type { WrappedVaultKey } from '@unsaid/types';
 import {
   changePassphrase,
@@ -40,6 +48,11 @@ interface VaultState {
   key: CryptoKey | null;
   keyVersion: number;
   isUnlocked: boolean;
+  /**
+   * False until the stored session has been read back on the client. Anything
+   * whose wording depends on whether a vault exists must wait for this.
+   */
+  isRestored: boolean;
   /** Set immediately after vault creation, shown once, then cleared. */
   pendingRecoveryCode: string | null;
   createNewVault: (passphrase: string) => Promise<void>;
@@ -72,8 +85,25 @@ function writeStored(key: string, value: string | null): void {
 }
 
 export function VaultProvider({ children }: { children: ReactNode }) {
-  const [userId, setUserId] = useState<string | null>(() => readStored(USER_KEY));
-  const [token, setToken] = useState<string | null>(() => readStored(TOKEN_KEY));
+  /**
+   * Storage is read after mount, not during the first render.
+   *
+   * The server has no session to read, so a stored id picked up during render
+   * makes the client's first pass disagree with the HTML it is hydrating.
+   * React resolves that by throwing the tree away and rebuilding it — and on
+   * the way through, a returning user is told "choose a phrase to lock your
+   * vault", which reads as though their vault is gone. Restoring in an effect
+   * costs one frame of the gate's placeholder and keeps the two passes equal.
+   */
+  const [userId, setUserId] = useState<string | null>(null);
+  const [token, setToken] = useState<string | null>(null);
+  const [isRestored, setIsRestored] = useState(false);
+
+  useEffect(() => {
+    setUserId(readStored(USER_KEY));
+    setToken(readStored(TOKEN_KEY));
+    setIsRestored(true);
+  }, []);
   const [key, setKey] = useState<CryptoKey | null>(null);
   const [keyVersion, setKeyVersion] = useState(1);
   const [pendingRecoveryCode, setPendingRecoveryCode] = useState<string | null>(null);
@@ -209,6 +239,7 @@ export function VaultProvider({ children }: { children: ReactNode }) {
       key,
       keyVersion,
       isUnlocked: key !== null && token !== null,
+      isRestored,
       pendingRecoveryCode,
       createNewVault,
       unlock,
@@ -223,6 +254,7 @@ export function VaultProvider({ children }: { children: ReactNode }) {
       token,
       key,
       keyVersion,
+      isRestored,
       pendingRecoveryCode,
       createNewVault,
       unlock,
