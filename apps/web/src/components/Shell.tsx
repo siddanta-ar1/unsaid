@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useEffect, type ReactNode } from 'react';
 import { FeedbackButton } from './FeedbackButton';
+import { Logo } from './Logo';
 import { trackReturn, type FeedbackScreen } from '@/lib/signals';
 
 /** Page frame. Navigation is deliberately small and text-only. */
@@ -23,8 +24,8 @@ export function Shell({
   return (
     <div className="mx-auto flex min-h-dvh w-full max-w-2xl flex-col px-6">
       <header className="flex items-baseline justify-between py-8">
-        <Link href="/app" className="font-serif text-lg tracking-wide text-ink">
-          UNSAID
+        <Link href="/app" className="text-ink" aria-label="UNSAID — open my vault">
+          <Logo withWordmark />
         </Link>
         <nav className="flex gap-6 text-sm text-ink-soft">
           <Link href="/vault" className="hover:text-ink">

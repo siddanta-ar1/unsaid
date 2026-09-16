@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <!-- At favicon size the bubble silhouette turns to mush, so the mark reduces
+       to the part that carries the idea: three dots, the last one unsaid. -->
+  <rect width="32" height="32" rx="8" fill="#1F4A52"/>
+  <circle cx="9.2" cy="16" r="2.6" fill="#EFEAE4"/>
+  <circle cx="16" cy="16" r="2.6" fill="#EFEAE4"/>
+  <circle cx="22.8" cy="16" r="2.6" fill="#FF7540"/>
+</svg>

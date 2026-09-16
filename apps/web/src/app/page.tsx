@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { Logo } from '@/components/Logo';
 import { WaitlistForm } from '@/components/WaitlistForm';
 
 /**
@@ -26,7 +27,7 @@ export default function LandingPage() {
   return (
     <div className="mx-auto flex min-h-dvh w-full max-w-2xl flex-col px-6">
       <header className="flex items-baseline justify-between py-8">
-        <span className="font-serif text-lg tracking-wide text-ink">UNSAID</span>
+        <Logo withWordmark className="text-ink" />
         <nav className="flex gap-6 text-sm text-ink-soft">
           <Link href="/privacy" className="hover:text-ink">
             How it works

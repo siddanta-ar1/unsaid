@@ -4,31 +4,54 @@
  * Quiet by design. The product is used late at night by people who are not
  * feeling good; the interface should recede rather than demand attention.
  * No accent-coloured calls to action, no badges, no counters.
+ *
+ * Palette: OMX Lab, the sunset-over-water set. Deep sea carries the type and
+ * the buttons; the warm half of the palette appears exactly twice — the dot in
+ * the mark, and the one place the interface has to raise its voice (`ember`,
+ * used for errors and focus). Two values were darkened from their swatch
+ * (`ink-faint` and `ember`) to clear 4.5:1 on paper; the rest are as sampled.
  */
 @theme {
-  --color-ink: #12100e;
-  --color-ink-soft: #6b6560;
-  --color-ink-faint: #75706c;
-  --color-paper: #faf8f5;
-  --color-paper-raised: #ffffff;
-  --color-line: #e8e3dc;
-  --color-field: #918e8a;
-  --color-ember: #866b59;
+  --color-ink: #1f4a52; /* deep sea */
+  --color-ink-soft: #445d58; /* slate green */
+  --color-ink-faint: #536f69; /* sage, deepened for AA — 4.57:1 on paper */
+  --color-paper: #efeae4; /* the palette's own ground */
+  --color-paper-raised: #f7f4ef;
+  --color-line: #caccc4; /* mist */
+  --color-field: #6c8880; /* sage, 3:1 for control borders */
+  --color-ember: #b14a24; /* coral, deepened for AA — 4.5:1 */
+  --color-accent: #ff7540; /* coral at full strength: the mark only, never text */
 
   --font-sans: ui-sans-serif, -apple-system, 'Segoe UI', Roboto, sans-serif;
   --font-serif: ui-serif, Georgia, 'Times New Roman', serif;
 }
 
+/*
+ * Night is the same sea, further down. Warm values lighten rather than darken:
+ * peach on deep sea reads, coral on deep sea does not.
+ *
+ * These are plain custom properties, not a second `@theme`. Tailwind v4 hoists
+ * every `@theme` block to the root and the last one wins — a nested one inside
+ * a media query silently replaces the light palette for everybody, which is
+ * what used to happen here: the light theme was dead code and every visitor
+ * got the dark one. Unlayered declarations also outrank the theme layer, so
+ * this override applies wherever it sits in the file.
+ */
+:root {
+  color-scheme: light dark;
+}
+
 @media (prefers-color-scheme: dark) {
-  @theme {
-    --color-ink: #f2efe9;
-    --color-ink-soft: #a29b95;
-    --color-ink-faint: #837f7b;
-    --color-paper: #0d0c0b;
-    --color-paper-raised: #171512;
-    --color-line: #2a2724;
-    --color-field: #666462;
-    --color-ember: #c4a58c;
+  :root {
+    --color-ink: #ede7e0;
+    --color-ink-soft: #b9c4c6;
+    --color-ink-faint: #8fa3a3;
+    --color-paper: #12262b;
+    --color-paper-raised: #193238;
+    --color-line: #2c4249;
+    --color-field: #758f87;
+    --color-ember: #ffbc9b; /* peach */
+    --color-accent: #ff7540;
   }
 }
 
