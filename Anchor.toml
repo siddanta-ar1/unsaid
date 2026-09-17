@@ -6,10 +6,10 @@ resolution = true
 skip-lint = false
 
 [programs.localnet]
-unsaid = "8YKzd762j9R8Mn6u8sxsTtHcif3uqdvKCyKnLZP3oATA"
+unsaid = "7nRKgRMiHfXg3fUXPRFdNX97BWfSKhNqvBaXZM5BLcHZ"
 
 [programs.devnet]
-unsaid = "8YKzd762j9R8Mn6u8sxsTtHcif3uqdvKCyKnLZP3oATA"
+unsaid = "7nRKgRMiHfXg3fUXPRFdNX97BWfSKhNqvBaXZM5BLcHZ"
 
 [provider]
 # Devnet for application development, per Solana's own guidance (§15.2).

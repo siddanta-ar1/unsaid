@@ -43,3 +43,6 @@ next-env.d.ts
 
 # Vercel CLI link state (project and org ids). Machine-local.
 .vercel
+
+# Program deploy keypair — whoever holds this controls upgrades.
+target/deploy/*-keypair.json

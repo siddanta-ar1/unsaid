@@ -15,7 +15,7 @@ import {
  * a UI component (§20.2).
  */
 
-export const UNSAID_PROGRAM_ID = address('8YKzd762j9R8Mn6u8sxsTtHcif3uqdvKCyKnLZP3oATA');
+export const UNSAID_PROGRAM_ID = address('7nRKgRMiHfXg3fUXPRFdNX97BWfSKhNqvBaXZM5BLcHZ');
 
 export const RECORD_SEED = new TextEncoder().encode('thought');
 

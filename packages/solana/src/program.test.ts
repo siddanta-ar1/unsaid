@@ -101,6 +101,6 @@ describe('account decoding', () => {
 
 describe('program identity', () => {
   it('carries a valid deployed program address', () => {
-    expect(UNSAID_PROGRAM_ID).toBe('8YKzd762j9R8Mn6u8sxsTtHcif3uqdvKCyKnLZP3oATA');
+    expect(UNSAID_PROGRAM_ID).toBe('7nRKgRMiHfXg3fUXPRFdNX97BWfSKhNqvBaXZM5BLcHZ');
   });
 });
