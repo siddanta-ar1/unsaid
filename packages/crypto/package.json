@@ -5,12 +5,23 @@
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
-  "exports": { ".": { "types": "./dist/index.d.ts", "default": "./dist/index.js" } },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "vitest run"
+    "test": "vitest run --root ../.. packages/crypto/src"
   },
-  "dependencies": { "@unsaid/types": "workspace:*" },
-  "devDependencies": { "@unsaid/config": "workspace:*", "typescript": "^5.9.3", "vitest": "^3.2.4" }
+  "dependencies": {
+    "@unsaid/types": "workspace:*"
+  },
+  "devDependencies": {
+    "@unsaid/config": "workspace:*",
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.4"
+  }
 }
