@@ -98,6 +98,72 @@ pub mod unsaid {
     pub fn close_record(_ctx: Context<CloseRecord>) -> Result<()> {
         Ok(())
     }
+
+    /// Records one access to one memory, so that it cannot be denied later.
+    ///
+    /// This is the half of the system that is not about ownership. A vault that
+    /// only its owner can read is a claim we make about ourselves; a receipt on
+    /// a ledger we do not control is a claim anyone can check. What goes here is
+    /// the shape of an access, never its content: which memory, which version of
+    /// the consent text, which code ran, and a hash of what came back.
+    ///
+    /// The signer is the recorder — us — not the subject. That is deliberate and
+    /// it is the weak point, so it is worth stating plainly: a recorder can fail
+    /// to write a receipt, and nothing on chain forces it to. What it cannot do
+    /// is write one and later change it, or access a memory and produce a
+    /// receipt that says otherwise, or deny a receipt that exists. The client
+    /// knows when it asked for a reflection, so a missing receipt is visible to
+    /// the one person who would care.
+    ///
+    /// The subject is a domain-separated digest of the vault, not a wallet. A
+    /// user who never connects a wallet still gets an audit trail, which is the
+    /// point — the protection cannot be reserved for the people who own crypto.
+    pub fn record_consent(
+        ctx: Context<RecordConsent>,
+        receipt_id: [u8; 32],
+        subject: [u8; 32],
+        thought_id: [u8; 32],
+        purpose: u8,
+        consent_version: u16,
+        attestation: [u8; 32],
+        result_hash: [u8; 32],
+    ) -> Result<()> {
+        require!(purpose <= Purpose::MAX, UnsaidError::InvalidPurpose);
+        // A receipt that does not say which wording was agreed to records
+        // nothing worth recording: consent is to a text, not to a flag.
+        require!(consent_version > 0, UnsaidError::MissingConsentVersion);
+
+        // Reflection is the one purpose where content leaves the device for a
+        // third party to compute on. An unattested reflection must be impossible
+        // to record rather than merely discouraged, because a receipt that can
+        // silently omit the measurement is worse than no receipt: it looks like
+        // evidence while proving nothing about what ran.
+        if purpose == Purpose::REFLECTION {
+            require!(attestation != [0u8; 32], UnsaidError::MissingAttestation);
+        }
+
+        let receipt = &mut ctx.accounts.receipt;
+        receipt.recorder = ctx.accounts.recorder.key();
+        receipt.receipt_id = receipt_id;
+        receipt.subject = subject;
+        receipt.thought_id = thought_id;
+        receipt.purpose = purpose;
+        receipt.consent_version = consent_version;
+        receipt.attestation = attestation;
+        receipt.result_hash = result_hash;
+        receipt.created_at = Clock::get()?.unix_timestamp;
+        receipt.bump = ctx.bumps.receipt;
+
+        emit!(ConsentRecorded {
+            recorder: receipt.recorder,
+            subject,
+            thought_id,
+            purpose,
+            created_at: receipt.created_at,
+        });
+
+        Ok(())
+    }
 }
 
 #[account]
@@ -122,6 +188,47 @@ pub struct ThoughtRecord {
 pub enum RecordStatus {
     Active = 0,
     Revoked = 1,
+}
+
+/// One recorded access. There is no instruction that changes it and none that
+/// closes it: a receipt that can be edited or withdrawn is not a receipt, and
+/// the rent is the price of that guarantee.
+#[account]
+#[derive(InitSpace)]
+pub struct ConsentReceipt {
+    /// The key that wrote this. Published, so a receipt from an unexpected
+    /// recorder is as visible as a missing one.
+    pub recorder: Pubkey,
+    /// Unique per access; also the seed that makes the address deterministic.
+    pub receipt_id: [u8; 32],
+    /// Whose data this concerns — a digest of the vault, never a wallet, so
+    /// that users without one are covered too.
+    pub subject: [u8; 32],
+    /// Which memory, as the same domain-separated digest the proof records use.
+    pub thought_id: [u8; 32],
+    /// The measurement of the code that ran. Zero is only legal for purposes
+    /// where nothing left the device.
+    pub attestation: [u8; 32],
+    /// A hash of what came back, so the answer shown to the user can be tied to
+    /// the access that produced it without storing the answer.
+    pub result_hash: [u8; 32],
+    /// The version of the consent text that was agreed to, not a boolean.
+    pub consent_version: u16,
+    pub purpose: u8,
+    pub created_at: i64,
+    pub bump: u8,
+}
+
+pub struct Purpose;
+impl Purpose {
+    /// Content left the device for a third party to compute on. Requires an
+    /// attestation.
+    pub const REFLECTION: u8 = 0;
+    /// The user took their own data out. Nothing left the device unencrypted.
+    pub const EXPORT: u8 = 1;
+    /// The user handed someone else a way in.
+    pub const SHARE: u8 = 2;
+    pub const MAX: u8 = Self::SHARE;
 }
 
 pub struct AccessMode;
@@ -165,6 +272,27 @@ pub struct UpdateRecord<'info> {
 }
 
 #[derive(Accounts)]
+#[instruction(receipt_id: [u8; 32], subject: [u8; 32])]
+pub struct RecordConsent<'info> {
+    #[account(
+        init,
+        payer = recorder,
+        space = 8 + ConsentReceipt::INIT_SPACE,
+        // Seeded by subject and receipt id, so the same access recorded twice
+        // collides rather than duplicating — a retry after a timeout cannot
+        // inflate someone's access log.
+        seeds = [b"consent", subject.as_ref(), receipt_id.as_ref()],
+        bump
+    )]
+    pub receipt: Account<'info, ConsentReceipt>,
+    /// The recorder pays. Charging the subject rent to be told they were
+    /// accessed would be a strange thing to build.
+    #[account(mut)]
+    pub recorder: Signer<'info>,
+    pub system_program: Program<'info, System>,
+}
+
+#[derive(Accounts)]
 pub struct CloseRecord<'info> {
     #[account(
         mut,
@@ -192,6 +320,15 @@ pub struct RecordRevoked {
     pub revoked_at: i64,
 }
 
+#[event]
+pub struct ConsentRecorded {
+    pub recorder: Pubkey,
+    pub subject: [u8; 32],
+    pub thought_id: [u8; 32],
+    pub purpose: u8,
+    pub created_at: i64,
+}
+
 #[error_code]
 pub enum UnsaidError {
     #[msg("The commitment must not be empty.")]
@@ -202,4 +339,10 @@ pub enum UnsaidError {
     NotRecordOwner,
     #[msg("This record is not active.")]
     RecordNotActive,
+    #[msg("Unknown purpose.")]
+    InvalidPurpose,
+    #[msg("A receipt must name the version of the consent text that was agreed to.")]
+    MissingConsentVersion,
+    #[msg("A reflection cannot be recorded without an attestation of the code that ran.")]
+    MissingAttestation,
 }

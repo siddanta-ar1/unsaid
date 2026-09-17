@@ -8,8 +8,11 @@ import {
   AccessMode,
   UNSAID_PROGRAM_ID,
   deriveRecordAddress,
+  deriveReceiptAddress,
   encodeCreateRecordData,
+  encodeRecordConsentData,
   encodeRevokeRecordData,
+  type Purpose,
 } from './program.js';
 
 /**
@@ -74,5 +77,57 @@ export async function revokeRecordInstruction({
       { address: owner, role: AccountRole.READONLY_SIGNER },
     ],
     data: await encodeRevokeRecordData(),
+  };
+}
+
+export interface RecordConsentInstructionArgs {
+  /** The key writing the receipt — us, not the subject. It pays the rent. */
+  recorder: Address;
+  receiptId: Uint8Array;
+  subject: Uint8Array;
+  thoughtId: Uint8Array;
+  purpose: Purpose;
+  consentVersion: number;
+  attestation: Uint8Array;
+  resultHash: Uint8Array;
+  programAddress?: Address;
+}
+
+/**
+ * Builds `record_consent`.
+ *
+ * Note which key signs: the recorder, not the subject. A user who never
+ * connects a wallet cannot sign anything, and an audit trail that only exists
+ * for people who own crypto would protect the wrong half of the users.
+ */
+export async function recordConsentInstruction({
+  recorder,
+  receiptId,
+  subject,
+  thoughtId,
+  purpose,
+  consentVersion,
+  attestation,
+  resultHash,
+  programAddress = UNSAID_PROGRAM_ID,
+}: RecordConsentInstructionArgs): Promise<Instruction> {
+  const [receipt] = await deriveReceiptAddress(subject, receiptId, programAddress);
+
+  return {
+    programAddress,
+    accounts: [
+      { address: receipt, role: AccountRole.WRITABLE },
+      { address: recorder, role: AccountRole.WRITABLE_SIGNER },
+      { address: SYSTEM_PROGRAM_ADDRESS, role: AccountRole.READONLY },
+    ],
+    data: await encodeRecordConsentData({
+      receiptId,
+      subject,
+      thoughtId,
+      purpose,
+      consentVersion,
+      attestation,
+      resultHash,
+    }),
   };
 }

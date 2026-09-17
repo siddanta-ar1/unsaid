@@ -18,6 +18,7 @@ import {
 export const UNSAID_PROGRAM_ID = address('7nRKgRMiHfXg3fUXPRFdNX97BWfSKhNqvBaXZM5BLcHZ');
 
 export const RECORD_SEED = new TextEncoder().encode('thought');
+export const CONSENT_SEED = new TextEncoder().encode('consent');
 
 export const AccessMode = {
   Private: 0,
@@ -30,6 +31,18 @@ export const RecordStatus = {
   Active: 0,
   Revoked: 1,
 } as const;
+
+/**
+ * What an access was for. Reflection is the only one where content leaves the
+ * device, which is why it is the only one the program requires an attestation
+ * for.
+ */
+export const Purpose = {
+  Reflection: 0,
+  Export: 1,
+  Share: 2,
+} as const;
+export type Purpose = (typeof Purpose)[keyof typeof Purpose];
 
 /**
  * Anchor instruction discriminators: the first 8 bytes of
@@ -62,6 +75,100 @@ export async function deriveRecordAddress(
     programAddress,
     seeds: [RECORD_SEED, getAddressEncoder().encode(owner), thoughtId],
   });
+}
+
+/**
+ * The receipt PDA. Seeded by subject and receipt id rather than by a wallet, so
+ * the address exists for users who never connect one.
+ */
+export async function deriveReceiptAddress(
+  subject: Uint8Array,
+  receiptId: Uint8Array,
+  programAddress: Address = UNSAID_PROGRAM_ID,
+): Promise<ProgramDerivedAddress> {
+  if (subject.length !== 32) throw new Error('subject must be 32 bytes.');
+  if (receiptId.length !== 32) throw new Error('receiptId must be 32 bytes.');
+  return getProgramDerivedAddress({
+    programAddress,
+    seeds: [CONSENT_SEED, subject, receiptId],
+  });
+}
+
+export interface RecordConsentArgs {
+  receiptId: Uint8Array;
+  subject: Uint8Array;
+  thoughtId: Uint8Array;
+  purpose: Purpose;
+  consentVersion: number;
+  /** 32 zero bytes where nothing left the device; the program rejects that for a reflection. */
+  attestation: Uint8Array;
+  resultHash: Uint8Array;
+}
+
+/** Serialises `record_consent` arguments in Anchor's Borsh layout. */
+export async function encodeRecordConsentData({
+  receiptId,
+  subject,
+  thoughtId,
+  purpose,
+  consentVersion,
+  attestation,
+  resultHash,
+}: RecordConsentArgs): Promise<Uint8Array> {
+  for (const [name, value] of Object.entries({ receiptId, subject, thoughtId, attestation, resultHash })) {
+    if (value.length !== 32) throw new Error(`${name} must be 32 bytes.`);
+  }
+  if (!Number.isInteger(consentVersion) || consentVersion < 1 || consentVersion > 0xffff) {
+    throw new Error('consentVersion must be a positive 16-bit integer.');
+  }
+
+  const discriminator = await instructionDiscriminator('record_consent');
+  const data = new Uint8Array(8 + 32 * 5 + 1 + 2);
+  data.set(discriminator, 0);
+  data.set(receiptId, 8);
+  data.set(subject, 40);
+  data.set(thoughtId, 72);
+  data[104] = purpose;
+  // u16 little-endian, like every other Borsh integer.
+  data[105] = consentVersion & 0xff;
+  data[106] = (consentVersion >> 8) & 0xff;
+  data.set(attestation, 107);
+  data.set(resultHash, 139);
+  return data;
+}
+
+export interface ConsentReceipt {
+  recorder: Address;
+  receiptId: Uint8Array;
+  subject: Uint8Array;
+  thoughtId: Uint8Array;
+  attestation: Uint8Array;
+  resultHash: Uint8Array;
+  consentVersion: number;
+  purpose: number;
+  createdAt: bigint;
+  bump: number;
+}
+
+/** Decodes a fetched receipt account. */
+export function decodeConsentReceipt(data: Uint8Array): ConsentReceipt {
+  const EXPECTED_SIZE = 8 + 32 * 6 + 2 + 1 + 8 + 1;
+  if (data.length < EXPECTED_SIZE) {
+    throw new Error(`Receipt data is too short: ${data.length} < ${EXPECTED_SIZE}.`);
+  }
+  const view = new DataView(data.buffer, data.byteOffset, data.byteLength);
+  return {
+    recorder: toBase58(data.slice(8, 40)) as Address,
+    receiptId: data.slice(40, 72),
+    subject: data.slice(72, 104),
+    thoughtId: data.slice(104, 136),
+    attestation: data.slice(136, 168),
+    resultHash: data.slice(168, 200),
+    consentVersion: view.getUint16(200, true),
+    purpose: data[202] as number,
+    createdAt: view.getBigInt64(203, true),
+    bump: data[211] as number,
+  };
 }
 
 export interface CreateRecordArgs {
