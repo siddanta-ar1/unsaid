@@ -10,6 +10,7 @@ import { AppError } from '../lib/errors.js';
 import { getReflectionProvider } from '../lib/ai/index.js';
 import { crisisResourcesFor } from '../lib/ai/crisis.js';
 import { track } from '../lib/analytics.js';
+import { hashReflection, recordAccess } from '../lib/consent-ledger.js';
 import { REFLECT_LIMIT } from '../lib/rate-limits.js';
 
 const IdParam = z.object({ id: z.uuid() });
@@ -131,6 +132,33 @@ export const echoRoutes: FastifyPluginAsyncZod = async (app) => {
         latencyBucket: latency < 2000 ? 'fast' : latency < 8000 ? 'normal' : 'slow',
         status: result.safetyNotice === 'support_resources' ? 'safety' : 'ok',
       });
+
+      /*
+       * The receipt. This is the moment the invariant bends — one memory has
+       * just been read by something that is not the user — so it is the moment
+       * that has to be written down somewhere we cannot edit it later.
+       *
+       * A provider that cannot prove what code ran is recorded as its own
+       * purpose rather than as an ordinary reflection with a field missing.
+       * Users should be able to see which of their reflections were attested
+       * and which were taken on trust, and today all of them are the latter.
+       *
+       * It cannot be allowed to fail the request: the reflection has already
+       * happened, the user is waiting for it, and refusing to return it would
+       * punish them for our bookkeeping.
+       */
+      try {
+        await recordAccess(request.log, {
+          userId,
+          thoughtId: thought.id,
+          purpose: provider.attestation ? 'reflection' : 'reflection_unattested',
+          consentVersion: CURRENT_AI_CONSENT_VERSION,
+          attestation: provider.attestation ?? null,
+          resultHash: hashReflection(record.id, result.content),
+        });
+      } catch (error) {
+        request.log.error({ err: error }, 'consent receipt could not be recorded');
+      }
 
       // Resources are attached only when the support path fired, and are
       // resolved from a request hint rather than anything we store about the

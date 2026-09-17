@@ -158,6 +158,7 @@ const ERROR_CODE = {
   InvalidPurpose: 6004,
   MissingConsentVersion: 6005,
   MissingAttestation: 6006,
+  UnexpectedAttestation: 6007,
 };
 
 function describe(error) {
@@ -228,6 +229,16 @@ const refusals = [
     })(),
   ),
   await expectFailure(
+    'an unattested reflection carrying a measurement',
+    ERROR_CODE.UnexpectedAttestation,
+    recordConsentInstruction({
+      ...base,
+      receiptId: new Uint8Array(randomBytes(32)),
+      purpose: Purpose.ReflectionUnattested,
+      attestation,
+    }),
+  ),
+  await expectFailure(
     'an unknown purpose',
     ERROR_CODE.InvalidPurpose,
     recordConsentInstruction({ ...base, receiptId: new Uint8Array(randomBytes(32)), purpose: 9 }),
@@ -238,6 +249,27 @@ const refusals = [
     recordConsentInstruction({ ...base, receiptId, purpose: Purpose.Reflection }),
   ),
 ];
+
+// The honest path: a provider that cannot prove what ran, recorded as exactly
+// that rather than as an ordinary reflection.
+const unattestedId = new Uint8Array(randomBytes(32));
+const unattestedSig = await send(
+  await recordConsentInstruction({
+    ...base,
+    receiptId: unattestedId,
+    purpose: Purpose.ReflectionUnattested,
+    attestation: new Uint8Array(32),
+  }),
+);
+const [unattestedAddress] = await deriveReceiptAddress(subject, unattestedId, address(PROGRAM_ID));
+const { value: unattestedAccount } = await rpc
+  .getAccountInfo(unattestedAddress, { encoding: 'base64' })
+  .send();
+const unattested = decodeConsentReceipt(Buffer.from(unattestedAccount.data[0], 'base64'));
+console.log('\n--- unattested reflection ---');
+console.log('purpose      ', unattested.purpose === 3 ? 'reflection, unattested' : unattested.purpose);
+console.log('attestation  ', unattested.attestation.every((b) => b === 0) ? 'none, as recorded' : 'unexpected');
+console.log('signature    ', unattestedSig);
 
 const cluster = RPC_URL.includes('devnet') ? '?cluster=devnet' : '';
 console.log('\nexplorer     ', `https://explorer.solana.com/address/${receiptAddress}${cluster}`);

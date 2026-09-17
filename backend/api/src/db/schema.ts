@@ -277,6 +277,52 @@ export const waitlist = pgTable(
   (t) => [uniqueIndex('waitlist_email_idx').on(t.email)],
 );
 
+/**
+ * Our copy of what was written to the consent ledger.
+ *
+ * The chain is the record; this is the outbox. It exists so that a receipt we
+ * failed to send is visible as `pending` rather than absent — a log that
+ * quietly omits the accesses it could not record would be worse than no log,
+ * because it would look complete.
+ *
+ * Note what is not here: no prompt, no reflection, no subject that could be
+ * read back to a person. `resultHash` is salted by the reflection id, so it can
+ * be recomputed by whoever holds the answer and by nobody else.
+ */
+export const consentReceipts = pgTable(
+  'consent_receipts',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    thoughtId: uuid('thought_id')
+      .notNull()
+      .references(() => thoughts.id, { onDelete: 'cascade' }),
+    /** The PDA seed, 32 bytes base64url. Also what makes a retry idempotent. */
+    receiptId: text('receipt_id').notNull(),
+    purpose: text('purpose', {
+      enum: ['reflection', 'reflection_unattested', 'export', 'share'],
+    }).notNull(),
+    consentVersion: integer('consent_version').notNull(),
+    /** Null where nothing could prove what ran, which is itself the record. */
+    attestation: text('attestation'),
+    resultHash: text('result_hash').notNull(),
+    network: text('network', { enum: ['devnet', 'mainnet-beta'] }).notNull(),
+    programId: text('program_id').notNull(),
+    accountAddress: text('account_address'),
+    txSignature: text('tx_signature'),
+    status: text('status', { enum: ['pending', 'confirmed', 'failed'] })
+      .notNull()
+      .default('pending'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex('consent_receipts_receipt_idx').on(t.receiptId),
+    index('consent_receipts_user_idx').on(t.userId, t.createdAt),
+  ],
+);
+
 export const schema = {
   users,
   objects,
@@ -290,6 +336,7 @@ export const schema = {
   analyticsEvents,
   feedback,
   waitlist,
+  consentReceipts,
 };
 
 export type { bytea };

@@ -138,8 +138,18 @@ pub mod unsaid {
         // to record rather than merely discouraged, because a receipt that can
         // silently omit the measurement is worse than no receipt: it looks like
         // evidence while proving nothing about what ran.
+        // Reflection is the one purpose where content leaves the device for a
+        // third party to compute on, so the two cases are distinct instructions
+        // to the reader of the log rather than a field they have to interpret.
+        // An attested reflection must carry a measurement; an unattested one
+        // must carry none, so that "we could not prove what ran" can never be
+        // dressed up as "we did", and an attested run cannot be quietly filed
+        // as an ordinary one either.
         if purpose == Purpose::REFLECTION {
             require!(attestation != [0u8; 32], UnsaidError::MissingAttestation);
+        }
+        if purpose == Purpose::REFLECTION_UNATTESTED {
+            require!(attestation == [0u8; 32], UnsaidError::UnexpectedAttestation);
         }
 
         let receipt = &mut ctx.accounts.receipt;
@@ -228,7 +238,11 @@ impl Purpose {
     pub const EXPORT: u8 = 1;
     /// The user handed someone else a way in.
     pub const SHARE: u8 = 2;
-    pub const MAX: u8 = Self::SHARE;
+    /// Content left the device for a provider that cannot prove what code ran.
+    /// Recorded as its own purpose so the log shows the difference instead of
+    /// asking anyone to notice a missing field.
+    pub const REFLECTION_UNATTESTED: u8 = 3;
+    pub const MAX: u8 = Self::REFLECTION_UNATTESTED;
 }
 
 pub struct AccessMode;
@@ -345,4 +359,6 @@ pub enum UnsaidError {
     MissingConsentVersion,
     #[msg("A reflection cannot be recorded without an attestation of the code that ran.")]
     MissingAttestation,
+    #[msg("An unattested reflection must not carry a measurement.")]
+    UnexpectedAttestation,
 }

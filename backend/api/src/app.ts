@@ -20,6 +20,7 @@ import { consentRoutes } from './routes/consents.js';
 import { solanaRoutes } from './routes/solana.js';
 import { healthRoutes } from './routes/health.js';
 import { signalRoutes } from './routes/signals.js';
+import { activityRoutes } from './routes/activity.js';
 
 export async function buildApp() {
   const config = loadConfig();
@@ -121,6 +122,7 @@ export async function buildApp() {
   await app.register(thoughtRoutes);
   await app.register(echoRoutes);
   await app.register(consentRoutes);
+  await app.register(activityRoutes);
   await app.register(solanaRoutes);
   await app.register(signalRoutes);
 

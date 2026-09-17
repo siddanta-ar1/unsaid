@@ -41,6 +41,8 @@ export const Purpose = {
   Reflection: 0,
   Export: 1,
   Share: 2,
+  /** A reflection by a provider that cannot prove what code ran. */
+  ReflectionUnattested: 3,
 } as const;
 export type Purpose = (typeof Purpose)[keyof typeof Purpose];
 

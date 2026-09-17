@@ -53,6 +53,16 @@ const EnvSchema = z.object({
   SOLANA_NETWORK: z.enum(['devnet', 'mainnet-beta']).default('devnet'),
   SOLANA_RPC_URL: z.string().optional(),
   SOLANA_PROGRAM_ID: z.string().optional(),
+
+  /**
+   * The key that writes consent receipts. Absent means the ledger is off: the
+   * receipt is still recorded locally as `pending`, because an access we could
+   * not publish has still happened and hiding it would defeat the point.
+   *
+   * A file path rather than the secret itself, so it cannot end up in an
+   * environment dump, a log line, or this repository.
+   */
+  SOLANA_RECORDER_KEYPAIR: z.string().optional(),
 });
 
 export type Config = z.infer<typeof EnvSchema> & { isProduction: boolean };

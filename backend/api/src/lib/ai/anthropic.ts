@@ -14,6 +14,13 @@ import type { ReflectionProvider, ReflectionRequest, ReflectionResult } from './
  */
 export class AnthropicReflectionProvider implements ReflectionProvider {
   readonly name = 'anthropic';
+
+  /**
+   * A vendor API over TLS proves the connection, not the computation. Until
+   * this runs somewhere that can produce a measurement, the honest value is
+   * null and the ledger records the access as unattested.
+   */
+  readonly attestation = null;
   private readonly client: Anthropic;
 
   constructor(

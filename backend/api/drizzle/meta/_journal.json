@@ -36,6 +36,13 @@
       "when": 1788167995225,
       "tag": "0004_session_epoch",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1789612203934,
+      "tag": "0005_consent_receipts",
+      "breakpoints": true
     }
   ]
 }

@@ -9,6 +9,9 @@ import type { ReflectionProvider, ReflectionRequest, ReflectionResult } from './
 export class StubReflectionProvider implements ReflectionProvider {
   readonly name = 'echo-stub';
 
+  /** Nothing leaves the machine, so there is nothing to attest and nothing to claim. */
+  readonly attestation = null;
+
   async reflect({ content }: ReflectionRequest): Promise<ReflectionResult> {
     const highRisk = detectHighRisk(content);
     const words = content.trim().split(/\s+/).length;

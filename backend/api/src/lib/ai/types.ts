@@ -15,5 +15,15 @@ export interface ReflectionResult {
 
 export interface ReflectionProvider {
   readonly name: string;
+  /**
+   * A base64url measurement of the code that ran, where the provider can prove
+   * one, and null where it cannot.
+   *
+   * Null is not a gap to be filled in later — it is the honest answer for every
+   * provider that runs on hardware we cannot attest, and it is recorded on the
+   * ledger as its own kind of access rather than quietly omitted from an
+   * ordinary one.
+   */
+  readonly attestation: string | null;
   reflect(request: ReflectionRequest): Promise<ReflectionResult>;
 }
