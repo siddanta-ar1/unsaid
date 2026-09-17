@@ -5,7 +5,16 @@ or let it go — your memories stay under your control.
 
 This repository implements the MVP described in the product and technical
 blueprint: voice and text capture, a client-side-encrypted vault, consent-gated
-AI reflection ("Echo"), and an optional Solana ownership layer.
+AI reflection ("Echo"), and a Solana layer that carries proof and consent —
+never content.
+
+Three layers, in the order they matter:
+
+| Layer | What it does | State |
+|---|---|---|
+| **The vault** | Client-side encryption, one key per memory, cryptographic forgetting | Built and tested |
+| **Echo** | AI reflection the user consents to, per version of the wording, one memory at a time | Built; confidential compute is next |
+| **The ledger** | A content-free record of proof and access that anyone can check without asking us | Program deployed to devnet; receipts in progress |
 
 ## The invariant
 
@@ -88,7 +97,7 @@ is re-uploaded, and an existing recovery kit keeps working.
 ## Testing
 
 ```bash
-pnpm test               # 161 tests: crypto, API, components, Solana client
+pnpm test               # 201 tests: crypto, API, components, Solana client
 cargo check -p unsaid   # the Anchor program
 ./scripts/restore-drill.sh   # prove a backup actually restores
 node scripts/scan-secrets.mjs --all   # also runs on every commit
@@ -134,19 +143,41 @@ A commitment — `SHA-256(thought_id ‖ ciphertext_hash)` — plus an owner key
 timestamp. That proves an encrypted memory existed at a point in time and who
 owned it, while revealing nothing about its content and being irreversible.
 
+```
+program   7nRKgRMiHfXg3fUXPRFdNX97BWfSKhNqvBaXZM5BLcHZ   (devnet)
+record    124 bytes · 0.00128 SOL rent · confirmed in ~550 ms
+```
+
 Anchoring is optional. A user who never connects a wallet has a fully working
 vault and no on-chain presence at all.
 
+The point of putting it there is `/verify`: a page that derives the record
+address from an owner and a memory id, reads it from a public RPC, and reports
+what the chain says. **This API is not in that path** — if it were lying, that
+page would still tell the truth. A claim only a stranger can check is worth
+writing to a chain; one only we can check is not.
+
+```bash
+node scripts/anchor-devnet.mjs      # anchors a memory, reads it back, prints the cost
+```
+
 ## Shipping
 
+- `docs/ROADMAP.md` — what is being built, in what order, and what is settled.
 - `docs/deployment.md` — every step, with the ones needing an account marked.
 - `docs/pilot-runbook.md` — how to run the first cohort so it yields an answer.
 - `docs/decisions.md` — judgement calls, and what is still open.
+- `docs/frontend-plan.md` — the screens the claim requires, and their rules.
+- `docs/brand.md` — the mark, the palette, and the Tailwind trap not to fall in.
+- `docs/paper/research-notes.md` — what is novel here, what is textbook, and the
+  prior art a reviewer will hold up.
 
 ## What this is not
 
 Not a therapy platform, a crisis service, or a diagnostic tool. Not a public
-social network. Not a diary on a blockchain. And not unbreakable — a device that
+social network. Not a diary on a blockchain: your words never go on chain, only
+a hash proving they existed. Not a web3 app either — there is no token, a wallet
+is never required, and every feature works without one. And not unbreakable — a device that
 is already compromised can read what you type before it is ever encrypted. What
 it does promise is that a leak of the database or the object store does not
 expose what anyone wrote.
