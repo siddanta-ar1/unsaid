@@ -104,6 +104,7 @@ export type FeedbackScreen =
   | 'memory'
   | 'settings'
   | 'privacy'
+  | 'activity'
   | 'unlock';
 
 export async function sendFeedback(input: {

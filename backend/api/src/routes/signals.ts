@@ -34,7 +34,7 @@ const IngestRequest = z.object({ key: CohortKey, event: AnalyticsEvent });
 
 const FeedbackRequest = z.object({
   /** Where they were, so a report is actionable. Never what they wrote. */
-  screen: z.enum(['home', 'capture', 'vault', 'memory', 'settings', 'privacy', 'unlock']),
+  screen: z.enum(['home', 'capture', 'vault', 'memory', 'settings', 'privacy', 'activity', 'unlock']),
   sentiment: z.enum(['confused', 'broken', 'idea', 'other']),
   /**
    * Their own words about the product. Capped short and explicitly labelled in

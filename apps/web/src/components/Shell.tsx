@@ -31,6 +31,9 @@ export function Shell({
           <Link href="/vault" className="hover:text-ink">
             Vault
           </Link>
+          <Link href="/activity" className="hover:text-ink">
+            Activity
+          </Link>
           <Link href="/privacy" className="hover:text-ink">
             Privacy
           </Link>
