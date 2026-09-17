@@ -32,6 +32,9 @@ export default function LandingPage() {
           <Link href="/privacy" className="hover:text-ink">
             How it works
           </Link>
+          <Link href="/verify" className="hover:text-ink">
+            Verify
+          </Link>
           <Link href="/app" className="hover:text-ink">
             Open my vault
           </Link>

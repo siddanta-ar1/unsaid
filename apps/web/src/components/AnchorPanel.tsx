@@ -37,7 +37,7 @@ export function AnchorPanel({ thoughtId }: { thoughtId: string }) {
   }, [thoughtId, token]);
 
   if (status?.anchored && status.signature) {
-    return <AnchoredProof status={status} />;
+    return <AnchoredProof status={status} thoughtId={thoughtId} owner={account?.address ?? null} />;
   }
 
   if (!account) {
@@ -145,8 +145,25 @@ function AnchorAction({
 }
 
 /** Blueprint D-02: show the proof, with nothing sensitive in it. */
-function AnchoredProof({ status }: { status: AnchorStatus }) {
+function AnchoredProof({
+  status,
+  thoughtId,
+  owner,
+}: {
+  status: AnchorStatus;
+  thoughtId: string;
+  owner: string | null;
+}) {
   const signature = status.signature as string;
+
+  /**
+   * A proof nobody can hand to anyone is not a proof. The link carries only
+   * what is already public on chain — an address, an id and a hash — and the
+   * page it opens reads Solana directly rather than asking us anything.
+   */
+  const verifyLink = owner
+    ? `/verify?owner=${encodeURIComponent(owner)}&id=${encodeURIComponent(thoughtId)}`
+    : `/verify?id=${encodeURIComponent(thoughtId)}`;
 
   return (
     <div className="mt-6 rounded-xl border border-line bg-paper-raised p-5">
@@ -176,9 +193,17 @@ function AnchoredProof({ status }: { status: AnchorStatus }) {
         View it on Solana Explorer
       </a>
 
+      <Link
+        href={verifyLink}
+        className="mt-4 ml-5 inline-block text-sm text-ink underline underline-offset-4"
+      >
+        Check it yourself
+      </Link>
+
       <p className="mt-4 text-xs leading-relaxed text-ink-faint">
         The commitment above is a one-way hash. It proves this memory existed without revealing
-        anything about it — not even to us.
+        anything about it — not even to us. Anyone you send that link to can confirm it without
+        going through us at all.
       </p>
     </div>
   );
