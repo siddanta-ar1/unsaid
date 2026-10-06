@@ -10,16 +10,17 @@ needs. Nothing here is a detour from anything else here.
 | arXiv preprint | Late Oct | ~1 week of writing |
 | Peer-reviewed paper | Feb 2027 | Pilot data, revision |
 
-## Where this stands (17 Sep 2026)
+## Where this stands (6 Oct 2026)
 
-**Research: 4/10.** The claim is defensible and the prior art is mapped
-(`docs/paper/research-notes.md`). There are no measurements at all, and no user
-data. That is most of the missing six points, and it is a week of work rather
-than a research programme.
+**Research: 5/10.** The claim is defensible, the prior art is mapped
+(`docs/paper/research-notes.md`), and the first on-chain numbers exist — 124-byte
+proof at 0.00128 SOL, 212-byte receipt at 0.0017 SOL, both confirmed in about
+half a second. The client-side benchmarks and any user data are still missing.
 
-**Hackathon: 5/10.** The product works and the engineering is well above the
-median entry — 161 tests, an invariant enforced in CI. Against that: the chain
-was decorative until today, there is no demo video, and there are no users.
+**Hackathon: 7/10.** The product works, the engineering is well above the median
+entry — 220 tests, an invariant enforced in CI — the program is deployed and
+called for real, the consent ledger is live, and there is a public URL a judge
+can open. Against that: no demo video, no attested inference, no users.
 
 Both numbers move to roughly 7 and 8 if the plan below is executed.
 
@@ -28,24 +29,25 @@ Both numbers move to roughly 7 and 8 if the plan below is executed.
 **Days 1–3 — unblock**
 - [x] Deploy the Anchor program to devnet —
       `7nRKgRMiHfXg3fUXPRFdNX97BWfSKhNqvBaXZM5BLcHZ` (17 Sep 2026)
-- [ ] Call it for real: `create_record` from a script, read the account back,
+- [x] Call it for real: `create_record` from a script, read the account back,
       decode it. The program exists on chain; nothing has executed yet
 - [ ] Exercise the wallet path once against a real extension
-- [ ] Register the team and claim the Solana track
+- [x] Deploy the web app publicly — https://unsaid-vault.vercel.app (6 Oct)
+- [ ] Register the team and claim the Solana track — category **Identity & Privacy**
 
 **Days 4–12 — the two new layers**
-- [ ] Consent receipts on chain: memory-id hash, consent version, enclave
+- [x] Consent receipts on chain: memory-id hash, consent version, enclave
       measurement, model id, response hash, timestamp. Align field names to
       ISO/IEC TS 27560:2023 — it costs nothing and removes a reviewer objection
 - [ ] Attested inference behind the existing `AI_PROVIDER` switch. Phala first
       (OpenAI-compatible, returns an attestation report and response hash);
       evaluate Chutes for the client-encrypted variant, where the relay is
       genuinely blind
-- [ ] Public verifier page — a stranger pastes a proof, the page checks the
+- [x] Public verifier page — a stranger pastes a proof, the page checks the
       chain, no backend of ours involved
 
 **Days 13–20 — make it real**
-- [ ] The access-log screen: everything that ever touched a memory, with the
+- [x] The access-log screen: everything that ever touched a memory, with the
       chain record beside it
 - [ ] USDC subscription, one working flow
 - [ ] **Run the benchmarks** (`docs/paper/research-notes.md` §6). This is the

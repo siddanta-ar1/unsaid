@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, type ReactNode } from 'react';
+import { BackendNotice } from './BackendNotice';
 import { FeedbackButton } from './FeedbackButton';
 import { Logo } from './Logo';
 import { trackReturn, type FeedbackScreen } from '@/lib/signals';
@@ -42,7 +43,10 @@ export function Shell({
           </Link>
         </nav>
       </header>
-      <main className="flex flex-1 flex-col">{children}</main>
+      <main className="flex flex-1 flex-col">
+        <BackendNotice />
+        {children}
+      </main>
       {/* Bottom padding keeps the last line clear of the fixed feedback button,
           which otherwise strikes through it on short viewports. */}
       <footer className="pb-20 pt-8 text-xs text-ink-faint">
