@@ -37,7 +37,15 @@ export default defineConfig({
     setupFiles: ['./apps/web/vitest.setup.ts'],
     include: ['**/src/**/*.test.ts', '**/src/**/*.test.tsx', '**/tests/**/*.test.ts'],
     exclude: ['**/node_modules/**', '**/dist/**'],
-    env: loadDotEnv(),
+    /*
+     * `.env` fills the gaps; it does not overrule the shell. Assigning it
+     * wholesale meant `AI_PROVIDER=phala pnpm test` silently ran the stub —
+     * the run reported a pass for a provider it never called, which is the
+     * worst kind of green.
+     */
+    env: Object.fromEntries(
+      Object.entries(loadDotEnv()).filter(([key]) => process.env[key] === undefined),
+    ),
     // Integration tests share one Postgres and one bucket; run them serially.
     fileParallelism: false,
     testTimeout: 30_000,

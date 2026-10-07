@@ -74,7 +74,15 @@ export class PhalaReflectionProvider implements ReflectionProvider {
     if (!response.ok) {
       // Deliberately without the body: a provider error can quote the prompt
       // that caused it, and the prompt is the one thing that must not be logged.
-      throw new Error(`Phala inference failed with ${response.status}.`);
+      // 402 is called out because it is the one failure here that is not a bug
+      // and not an outage — it means the account is out of credit, and an
+      // operator reading "failed with 402" would go looking for one of the
+      // other two.
+      throw new Error(
+        response.status === 402
+          ? 'Phala inference is out of credit: the key is valid but the account balance is zero.'
+          : `Phala inference failed with ${response.status}.`,
+      );
     }
 
     const payload = (await response.json()) as {
