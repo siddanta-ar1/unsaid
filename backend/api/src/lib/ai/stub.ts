@@ -9,9 +9,6 @@ import type { ReflectionProvider, ReflectionRequest, ReflectionResult } from './
 export class StubReflectionProvider implements ReflectionProvider {
   readonly name = 'echo-stub';
 
-  /** Nothing leaves the machine, so there is nothing to attest and nothing to claim. */
-  readonly attestation = null;
-
   async reflect({ content }: ReflectionRequest): Promise<ReflectionResult> {
     const highRisk = detectHighRisk(content);
     const words = content.trim().split(/\s+/).length;
@@ -22,6 +19,8 @@ export class StubReflectionProvider implements ReflectionProvider {
         : `I hear you. You gave this about ${words} words, which suggests it had been sitting with you for a while.\n\nWhat part of it feels most unresolved right now?`,
       modelVersion: 'echo-stub-v1',
       safetyNotice: highRisk ? 'support_resources' : 'none',
+      // Nothing left the machine, so there is nothing to attest and nothing to claim.
+      attestation: null,
     };
   }
 }

@@ -151,9 +151,9 @@ export const echoRoutes: FastifyPluginAsyncZod = async (app) => {
         await recordAccess(request.log, {
           userId,
           thoughtId: thought.id,
-          purpose: provider.attestation ? 'reflection' : 'reflection_unattested',
+          purpose: result.attestation ? 'reflection' : 'reflection_unattested',
           consentVersion: CURRENT_AI_CONSENT_VERSION,
-          attestation: provider.attestation ?? null,
+          attestation: result.attestation,
           resultHash: hashReflection(record.id, result.content),
         });
       } catch (error) {

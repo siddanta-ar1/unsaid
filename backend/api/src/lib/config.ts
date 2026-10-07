@@ -33,8 +33,18 @@ const EnvSchema = z.object({
   CORS_ORIGIN: z.string().default('http://localhost:3010'),
 
   // Echo. Absent means reflection is disabled rather than silently degraded.
-  AI_PROVIDER: z.enum(['anthropic', 'echo-stub']).default('echo-stub'),
+  AI_PROVIDER: z.enum(['anthropic', 'phala', 'echo-stub']).default('echo-stub'),
   ANTHROPIC_API_KEY: z.string().optional(),
+
+  /**
+   * Confidential inference. The gateway runs in an Intel TDX enclave and
+   * publishes an attestation report, whose workload measurement is what the
+   * consent ledger records — so a user can check which code read their memory
+   * without taking our word for it.
+   */
+  PHALA_API_KEY: z.string().optional(),
+  PHALA_MODEL: z.string().default('google/gemma-4-31b-it'),
+  PHALA_BASE_URL: z.string().default('https://inference.phala.com/v1'),
   // Matches .env.example, which said opus-5 while this default said sonnet-5 —
   // the two disagreeing meant a deploy without AI_MODEL set would quietly run
   // a different model from the one documented.
@@ -84,8 +94,11 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
   const config = { ...parsed.data, isProduction: parsed.data.NODE_ENV === 'production' };
 
   if (config.isProduction) {
-    if (config.AI_PROVIDER !== 'echo-stub' && !config.ANTHROPIC_API_KEY) {
+    if (config.AI_PROVIDER === 'anthropic' && !config.ANTHROPIC_API_KEY) {
       throw new Error('AI_PROVIDER is set to a real provider but ANTHROPIC_API_KEY is missing.');
+    }
+    if (config.AI_PROVIDER === 'phala' && !config.PHALA_API_KEY) {
+      throw new Error('AI_PROVIDER is set to phala but PHALA_API_KEY is missing.');
     }
     if (config.SESSION_SECRET.length < 48) {
       throw new Error('SESSION_SECRET must be at least 48 characters in production.');

@@ -39,7 +39,10 @@ Both numbers move to roughly 7 and 8 if the plan below is executed.
 - [x] Consent receipts on chain: memory-id hash, consent version, enclave
       measurement, model id, response hash, timestamp. Align field names to
       ISO/IEC TS 27560:2023 — it costs nothing and removes a reviewer objection
-- [ ] Attested inference behind the existing `AI_PROVIDER` switch. Phala first
+- [x] Attested inference behind the existing `AI_PROVIDER` switch — Phala, whose
+      TDX measurement goes straight onto the receipt. Needs a RedPill inference
+      key to run; a Phala Cloud `phak_` key is a different product and is
+      rejected. Phala first
       (OpenAI-compatible, returns an attestation report and response hash);
       evaluate Chutes for the client-encrypted variant, where the relay is
       genuinely blind

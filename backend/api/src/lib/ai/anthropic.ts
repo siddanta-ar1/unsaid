@@ -15,12 +15,6 @@ import type { ReflectionProvider, ReflectionRequest, ReflectionResult } from './
 export class AnthropicReflectionProvider implements ReflectionProvider {
   readonly name = 'anthropic';
 
-  /**
-   * A vendor API over TLS proves the connection, not the computation. Until
-   * this runs somewhere that can produce a measurement, the honest value is
-   * null and the ledger records the access as unattested.
-   */
-  readonly attestation = null;
   private readonly client: Anthropic;
 
   constructor(
@@ -52,6 +46,8 @@ export class AnthropicReflectionProvider implements ReflectionProvider {
           'I was not able to reflect on that one. Your words are still saved, exactly as you wrote them.',
         modelVersion: this.model,
         safetyNotice: highRisk ? 'support_resources' : 'none',
+        // A vendor API over TLS proves the connection, not the computation.
+        attestation: null,
       };
     }
 
@@ -65,6 +61,7 @@ export class AnthropicReflectionProvider implements ReflectionProvider {
       content: text,
       modelVersion: this.model,
       safetyNotice: highRisk ? 'support_resources' : 'none',
+      attestation: null,
     };
   }
 }

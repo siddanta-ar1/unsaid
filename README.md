@@ -13,7 +13,7 @@ Three layers, in the order they matter:
 | Layer | What it does | State |
 |---|---|---|
 | **The vault** | Client-side encryption, one key per memory, cryptographic forgetting | Built and tested |
-| **Echo** | AI reflection the user consents to, per version of the wording, one memory at a time | Built; confidential compute is next |
+| **Echo** | AI reflection the user consents to, per version of the wording, one memory at a time | Built, with an attested provider: the model runs in an Intel TDX enclave and the measurement of the code that ran is written to the receipt |
 | **The ledger** | A content-free record of proof and access that anyone can check without asking us | Program deployed to devnet; receipts in progress |
 
 ## The invariant
