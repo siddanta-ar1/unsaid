@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useVault } from '@/lib/vault';
 import { sendFeedback, type FeedbackScreen } from '@/lib/signals';
 
@@ -54,6 +54,25 @@ export function FeedbackButton({ screen }: { screen: FeedbackScreen }) {
     setState('idle');
   }
 
+  // Escape closes the panel, and opening it moves focus inside. Without this a
+  // keyboard user could tab straight out of an open dialog into the page
+  // behind it, which on this product means into someone's vault.
+  const panelRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    panelRef.current?.querySelector('button')?.focus();
+
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key !== 'Escape') return;
+      setOpen(false);
+      setState('idle');
+    }
+
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, [open]);
+
   if (!open) {
     return (
       <button
@@ -68,7 +87,13 @@ export function FeedbackButton({ screen }: { screen: FeedbackScreen }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-4 sm:items-center">
-      <div className="w-full max-w-md rounded-2xl border border-line bg-paper-raised p-6">
+      <div
+        ref={panelRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Send feedback"
+        className="max-h-[90dvh] w-full max-w-md overflow-y-auto rounded-2xl border border-line bg-paper-raised p-6"
+      >
         {state === 'sent' ? (
           <>
             <h2 className="font-serif text-xl text-ink">Thank you — that helps.</h2>

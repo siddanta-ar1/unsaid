@@ -22,6 +22,8 @@ const { push, saveTextThought } = vi.hoisted(() => ({
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ push }),
   useSearchParams: () => new URLSearchParams(''),
+  // The Shell reads the path to mark the current section in the nav.
+  usePathname: () => '/capture',
 }));
 
 vi.mock('@/lib/vault', () => ({

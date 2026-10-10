@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Logo } from '@/components/Logo';
+import { TrustBoundary } from '@/components/TrustBoundary';
 import { WaitlistForm } from '@/components/WaitlistForm';
 
 /**
@@ -25,10 +26,11 @@ export const metadata: Metadata = {
 
 export default function LandingPage() {
   return (
-    <div className="mx-auto flex min-h-dvh w-full max-w-2xl flex-col px-6">
-      <header className="flex items-baseline justify-between py-8">
-        <Logo withWordmark className="text-ink" />
-        <nav className="flex gap-6 text-sm text-ink-soft">
+    <div className="mx-auto flex min-h-dvh w-full max-w-2xl flex-col px-5 sm:px-6">
+      {/* Stacks under `sm`: the wordmark and three links do not fit one line on a phone. */}
+      <header className="flex flex-col gap-3 py-6 sm:flex-row sm:items-baseline sm:justify-between sm:py-8">
+        <Logo withWordmark className="self-start text-ink" />
+        <nav aria-label="Primary" className="flex gap-5 text-sm text-ink-soft sm:gap-6">
           <Link href="/privacy" className="hover:text-ink">
             How it works
           </Link>
@@ -42,16 +44,16 @@ export default function LandingPage() {
       </header>
 
       <main className="flex flex-1 flex-col">
-        <section className="py-14">
-          <h1 className="max-w-[18ch] font-serif text-4xl leading-[1.15] text-ink">
+        <section className="py-10 sm:py-14">
+          <h1 className="max-w-[18ch] font-serif text-[2rem] leading-[1.15] text-ink sm:text-4xl">
             Not every thought needs an audience.
           </h1>
-          <p className="mt-6 max-w-prose text-lg leading-relaxed text-ink-soft">
+          <p className="mt-5 max-w-prose leading-relaxed text-ink-soft sm:mt-6 sm:text-lg">
             Sometimes it only needs somewhere to exist. UNSAID is a private place to say the
             things you would rather not say out loud — to anyone.
           </p>
 
-          <div className="mt-10 flex flex-wrap items-center gap-4">
+          <div className="mt-8 flex flex-wrap items-center gap-4 sm:mt-10">
             <Link
               href="/app"
               className="rounded-xl bg-ink px-7 py-4 text-lg text-paper hover:opacity-90"
@@ -60,10 +62,12 @@ export default function LandingPage() {
             </Link>
             <span className="text-sm text-ink-faint">No account. No email. No audience.</span>
           </div>
+
+          <TrustBoundary />
         </section>
 
-        <section className="border-t border-line py-12">
-          <h2 className="font-serif text-2xl text-ink">You do not always need advice</h2>
+        <section className="border-t border-line py-10 sm:py-12">
+          <h2 className="font-serif text-xl text-ink sm:text-2xl">You do not always need advice</h2>
           <p className="mt-4 max-w-prose leading-relaxed text-ink-soft">
             There is a moment — usually late — when something needs to come out, but you are not
             sure you want a conversation about it. Messaging a friend asks them to carry it.
@@ -75,8 +79,8 @@ export default function LandingPage() {
           </p>
         </section>
 
-        <section className="border-t border-line py-12">
-          <h2 className="font-serif text-2xl text-ink">What happens here</h2>
+        <section className="border-t border-line py-10 sm:py-12">
+          <h2 className="font-serif text-xl text-ink sm:text-2xl">What happens here</h2>
           <dl className="mt-8 flex flex-col gap-8">
             {[
               {
@@ -110,8 +114,8 @@ export default function LandingPage() {
           </dl>
         </section>
 
-        <section className="border-t border-line py-12">
-          <h2 className="font-serif text-2xl text-ink">What we will not do</h2>
+        <section className="border-t border-line py-10 sm:py-12">
+          <h2 className="font-serif text-xl text-ink sm:text-2xl">What we will not do</h2>
           <ul className="mt-6 flex max-w-prose flex-col gap-3 text-sm leading-relaxed text-ink-soft">
             <li>We will not read what you write. We built it so that we cannot.</li>
             <li>We will not sell your data, or use it to target anything at you.</li>
@@ -124,8 +128,8 @@ export default function LandingPage() {
           </ul>
         </section>
 
-        <section className="border-t border-line py-12">
-          <h2 className="font-serif text-2xl text-ink">The honest caveat</h2>
+        <section className="border-t border-line py-10 sm:py-12">
+          <h2 className="font-serif text-xl text-ink sm:text-2xl">The honest caveat</h2>
           <p className="mt-4 max-w-prose leading-relaxed text-ink-soft">
             Nothing is unbreakable. A device that is already compromised can read what you type
             before we ever encrypt it, and we will never claim otherwise. What we do promise is
@@ -141,8 +145,8 @@ export default function LandingPage() {
           </Link>
         </section>
 
-        <section className="border-t border-line py-12">
-          <h2 className="font-serif text-2xl text-ink">Optional: proof it is yours</h2>
+        <section className="border-t border-line py-10 sm:py-12">
+          <h2 className="font-serif text-xl text-ink sm:text-2xl">Optional: proof it is yours</h2>
           <p className="mt-4 max-w-prose leading-relaxed text-ink-soft">
             If you want it, you can anchor a memory on Solana — publishing a one-way hash that
             proves it existed and is yours, without revealing a single word of it. Most people
@@ -150,8 +154,8 @@ export default function LandingPage() {
           </p>
         </section>
 
-        <section className="border-t border-line py-12">
-          <h2 className="font-serif text-2xl text-ink">Early access</h2>
+        <section className="border-t border-line py-10 sm:py-12">
+          <h2 className="font-serif text-xl text-ink sm:text-2xl">Early access</h2>
           <p className="mt-4 max-w-prose leading-relaxed text-ink-soft">
             We are opening this to a small group first, and would rather get it right for thirty
             people than be adequate for thousands. Leave an address if you want to be one of them.

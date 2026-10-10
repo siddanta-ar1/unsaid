@@ -60,6 +60,61 @@ body {
   background: var(--color-paper);
   color: var(--color-ink);
   -webkit-font-smoothing: antialiased;
+  /*
+   * A page that scrolls sideways reads as broken, and on a phone it is easy to
+   * do by accident. `clip` stops the gesture without creating a scroll
+   * container, so `position: sticky` keeps working.
+   */
+  overflow-x: clip;
+}
+
+/*
+ * Visible focus, everywhere, in one place.
+ *
+ * Before this the only focus style in the product was on a single textarea, so
+ * a keyboard user tabbing through the vault had no idea where they were. Ember
+ * is the one colour allowed to raise its voice, which is exactly this case.
+ */
+:focus-visible {
+  outline: 2px solid var(--color-ember);
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--color-ember) 22%, transparent);
+  color: var(--color-ink);
+}
+
+/*
+ * Headings are short and set in a serif; balancing stops a two-word orphan on
+ * the second line, which is the most common ugly break on a phone.
+ */
+h1,
+h2,
+h3 {
+  text-wrap: balance;
+}
+
+p,
+li,
+dd {
+  text-wrap: pretty;
+}
+
+/*
+ * Touch targets. The nav and inline links are small text by design, so give
+ * them room to be hit without changing how they look.
+ */
+@media (pointer: coarse) {
+  nav a,
+  footer a {
+    padding-block: 0.375rem;
+  }
 }
 
 /* Respect a stated preference for less motion — not a decorative concern here. */

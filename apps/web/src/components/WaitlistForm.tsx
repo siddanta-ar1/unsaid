@@ -54,7 +54,10 @@ export function WaitlistForm() {
         placeholder="you@example.com"
         autoComplete="email"
         required
-        className="flex-1 rounded-lg border border-field bg-paper-raised px-4 py-3 text-ink outline-none placeholder:text-ink-faint focus:border-ember"
+        // `min-w-0`: an input carries an intrinsic width from its `size`
+        // attribute, which a flex child will not shrink below — it was forcing
+        // this section 8px wider than a 390px phone can show.
+        className="w-full min-w-0 flex-1 rounded-lg border border-field bg-paper-raised px-4 py-3 text-ink outline-none placeholder:text-ink-faint focus:border-ember"
       />
       <button
         type="submit"

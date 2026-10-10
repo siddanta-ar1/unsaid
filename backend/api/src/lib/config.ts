@@ -48,7 +48,7 @@ const EnvSchema = z.object({
   // Matches .env.example, which said opus-5 while this default said sonnet-5 —
   // the two disagreeing meant a deploy without AI_MODEL set would quietly run
   // a different model from the one documented.
-  AI_MODEL: z.string().default('claude-opus-5'),
+  AI_MODEL: z.string().default('claude-opus-5-5'),
 
   /**
    * Reflections allowed per user per rolling week.
