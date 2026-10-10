@@ -1,0 +1,38 @@
+# What must never be uploaded to a build.
+#
+# `vercel deploy` from the CLI uploads the working tree, and it reads THIS file
+# rather than .gitignore. Without it, a local `.env` — which on a developer
+# machine holds a live inference key and the recorder keypair path — would be
+# packed into the deployment, and a local `dist/` would mask the clean-checkout
+# build failure that `docs/deployment.md` describes.
+#
+# A Git-connected deploy does not use this file; it builds from the commit, so
+# gitignored files are absent anyway. This protects the CLI path specifically.
+
+# Credentials. The first line is the one that matters.
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Built output: the build must produce this from source, on Vercel, from a
+# clean checkout. Shipping a local copy hides a broken build until the next
+# person clones the repo.
+dist/
+.next/
+out/
+target/
+node_modules/
+
+# Not part of the web build.
+.git/
+infra/
+docs/
+scripts/
+programs/
+backend/api/src/
+backend/api/tests/
+backend/api/scripts/
+.github/
+*.log
