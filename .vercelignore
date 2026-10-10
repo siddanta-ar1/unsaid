@@ -25,6 +25,16 @@ out/
 target/
 node_modules/
 
+# Local caches. These are the ones that actually bite: .turbo/cache alone is
+# ~700MB here and holds individual archives past Vercel's 100MB per-file
+# limit, so a deploy fails on upload rather than on anything to do with the
+# code. All of them are gitignored, which is exactly why they need naming
+# here — this file is read instead of .gitignore, not as well as it.
+.turbo/
+.vercel/
+coverage/
+*.tsbuildinfo
+
 # Not part of the web build.
 .git/
 infra/
