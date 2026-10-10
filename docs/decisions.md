@@ -192,3 +192,36 @@ Connect. A signature is requested only when anchoring, never on page load.
 - **Anonymous social layer.** Deliberately out of MVP scope (§9.3).
 - **Independent security review** before the program's upgrade authority is
   moved to a production signer.
+
+## FHE: assessed, and not used for Echo
+
+Asked whether Echo could run on fully homomorphic encryption, so the model
+never sees plaintext at all. The answer is no, and it is a shape mismatch
+rather than a performance gap that better hardware closes.
+
+`docs/paper/research-notes.md` §3.5 already carries the evidence. Optimised
+ZKML reaches GPT-2-class networks; FHE inference on transformers is worse
+still, with per-token latency measured in minutes. Arcium's own documentation
+rules it out structurally for this workload — no `Vec`, `String` or `HashMap`,
+no `while`, a circuit shape fixed at compile time, and a 1,232-byte output
+ceiling. Echo takes variable-length text and returns variable-length text.
+
+So the §3.5 conclusion stands: TEE attestation is the only deployable option
+at LLM scale today, and saying otherwise on a slide would cost us the one
+reader who knows this field.
+
+**Where it does apply.** The same section reserves MPC for small, fixed-shape
+computations, and the pilot's funnel is exactly that: counters summed across
+users where no individual's events need to be readable. An additively
+homomorphic scheme over the existing `signals` path would let us say we
+compute the funnel without reading anyone's events. Not built; worth building
+before the pilot, because it is the one place the architecture still sees
+something it does not need to.
+
+**Why search did not use SSE.** Searchable symmetric encryption exists because
+the corpus is too large to hold on the client. A personal vault is not that —
+hundreds of short memories, each decrypting in well under a millisecond — so
+the client decrypts everything and matches in memory, which leaks nothing at
+all: no query, no index, no access pattern over an index. Every SSE scheme
+leaks some of that, and the published attacks on those leakage profiles are
+the reason not to buy a weaker property for a problem we do not have.

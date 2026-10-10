@@ -7,6 +7,7 @@ import { Shell } from '@/components/Shell';
 import { UnlockGate } from '@/components/UnlockGate';
 import { useVault } from '@/lib/vault';
 import { listThoughts } from '@/lib/thoughts';
+import { VaultSearch } from '@/components/VaultSearch';
 
 /**
  * The vault timeline. Blueprint §11.4.
@@ -26,7 +27,7 @@ export default function VaultPage() {
 }
 
 function VaultList() {
-  const { token } = useVault();
+  const { token, key } = useVault();
   const [thoughts, setThoughts] = useState<ThoughtMetadata[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -60,6 +61,8 @@ function VaultList() {
       <p className="mt-2 text-sm text-ink-soft">
         {thoughts.length} {thoughts.length === 1 ? 'memory' : 'memories'}, encrypted.
       </p>
+
+      {token && key && <VaultSearch thoughts={thoughts} token={token} vaultKey={key} />}
 
       <ul className="mt-8 divide-y divide-line border-t border-line">
         {thoughts.map((thought) => (
