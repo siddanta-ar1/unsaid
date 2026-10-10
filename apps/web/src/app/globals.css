@@ -22,6 +22,22 @@
   --color-ember: #b14a24; /* coral, deepened for AA — 4.5:1 */
   --color-accent: #ff7540; /* coral at full strength: the mark only, never text */
 
+  /*
+   * Two semantic colours, for teaching only.
+   *
+   * The vault itself stays monochrome — someone writing at 2am is not being
+   * sold to. But the Privacy Centre has to answer "what is safe and what is
+   * exposed", and a paragraph is a worse answer than two colours. These appear
+   * on that page and nowhere else.
+   *
+   * They differ in lightness as well as hue, so the distinction survives
+   * colour-blindness, and every place they are used also says it in words.
+   */
+  --color-safe: #2f6f5e; /* sealed, ours-to-keep — 4.8:1 on paper */
+  --color-safe-wash: #e2ece6;
+  --color-caution: #8a6218; /* visible to us — 4.6:1 on paper */
+  --color-caution-wash: #f2ead6;
+
   --font-sans: ui-sans-serif, -apple-system, 'Segoe UI', Roboto, sans-serif;
   --font-serif: ui-serif, Georgia, 'Times New Roman', serif;
 }
@@ -52,6 +68,10 @@
     --color-field: #758f87;
     --color-ember: #ffbc9b; /* peach */
     --color-accent: #ff7540;
+    --color-safe: #7fc3ac;
+    --color-safe-wash: #16343a;
+    --color-caution: #e0b968;
+    --color-caution-wash: #2e2a1d;
   }
 }
 

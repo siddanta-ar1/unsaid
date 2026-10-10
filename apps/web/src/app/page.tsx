@@ -1,7 +1,9 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { JourneySteps } from '@/components/JourneySteps';
+import { LiveSeal } from '@/components/LiveSeal';
 import { Logo } from '@/components/Logo';
-import { TrustBoundary } from '@/components/TrustBoundary';
+import { VisibilityLedger } from '@/components/VisibilityLedger';
 import { WaitlistForm } from '@/components/WaitlistForm';
 
 /**
@@ -11,10 +13,11 @@ import { WaitlistForm } from '@/components/WaitlistForm';
  * ownership story only lands once someone already wants the thing, so Solana
  * appears once, low on the page, as a trust detail rather than a headline.
  *
- * This also fixes the steepest wall in the product. Previously a first-time
- * visitor met "choose a phrase to lock your vault" before understanding what
- * the vault was for — the top risk in the shipping plan. Now they read one
- * screen first and arrive at the passphrase already knowing why it matters.
+ * This page used to make its case in prose, which asked a visitor to believe
+ * six paragraphs. It now makes the same case by running the encryption on
+ * their own sentence, by letting them click through the five steps, and by
+ * putting what we can see beside what we cannot. The claims are unchanged —
+ * only the amount of reading required to check them.
  */
 export const metadata: Metadata = {
   title: 'UNSAID — a private place for the things you cannot say out loud',
@@ -62,8 +65,11 @@ export default function LandingPage() {
             </Link>
             <span className="text-sm text-ink-faint">No account. No email. No audience.</span>
           </div>
+        </section>
 
-          <TrustBoundary />
+        {/* The proof, before the prose. Everything below is elaboration on this. */}
+        <section className="border-t border-line py-10 sm:py-12">
+          <LiveSeal />
         </section>
 
         <section className="border-t border-line py-10 sm:py-12">
@@ -80,8 +86,32 @@ export default function LandingPage() {
         </section>
 
         <section className="border-t border-line py-10 sm:py-12">
-          <h2 className="font-serif text-xl text-ink sm:text-2xl">What happens here</h2>
-          <dl className="mt-8 flex flex-col gap-8">
+          <h2 className="font-serif text-xl text-ink sm:text-2xl">
+            What happens to one sentence
+          </h2>
+          <p className="mt-3 max-w-prose leading-relaxed text-ink-soft">
+            Five steps, and the only two that touch our servers never see a readable word. Click
+            through them.
+          </p>
+          <div className="mt-7">
+            <JourneySteps />
+          </div>
+        </section>
+
+        <section className="border-t border-line py-10 sm:py-12">
+          <h2 className="font-serif text-xl text-ink sm:text-2xl">Exactly what we can see</h2>
+          <p className="mt-3 max-w-prose leading-relaxed text-ink-soft">
+            Both columns are complete. The left one is short because there is genuinely nothing
+            else in it.
+          </p>
+          <div className="mt-7">
+            <VisibilityLedger />
+          </div>
+        </section>
+
+        <section className="border-t border-line py-10 sm:py-12">
+          <h2 className="font-serif text-xl text-ink sm:text-2xl">What you can do with it</h2>
+          <div className="mt-6 grid gap-4 sm:grid-cols-2">
             {[
               {
                 term: 'Speak or write, immediately',
@@ -94,24 +124,35 @@ export default function LandingPage() {
                   'Keep it privately, ask Echo to reflect on it, or let it go. Nothing is saved anywhere until you choose.',
               },
               {
-                term: 'It is encrypted before it leaves your device',
+                term: 'Read it back, years later',
                 detail:
-                  'With a key we never receive. What reaches our servers is a file of random-looking bytes. We cannot read it, and neither can anyone who takes our database.',
+                  'Your vault is yours to reopen whenever you want. Unlocking takes about four tenths of a second.',
               },
               {
-                term: 'You can leave with everything',
+                term: 'Leave with everything',
                 detail:
-                  'One button exports every word, decrypted, as ordinary files that open without us — on any computer, years from now.',
+                  'One button exports every word, decrypted, as ordinary files that open without us — on any computer.',
+              },
+              {
+                term: 'Make a memory truly gone',
+                detail:
+                  'Forgetting destroys the key first, so even a surviving backup is unreadable noise. Including to us.',
+              },
+              {
+                term: 'Check what has touched it',
+                detail:
+                  'An access log, with the matching public record beside each entry, so our version can be compared.',
               },
             ].map((item) => (
-              <div key={item.term}>
-                <dt className="text-base text-ink">{item.term}</dt>
-                <dd className="mt-1.5 max-w-prose text-sm leading-relaxed text-ink-soft">
-                  {item.detail}
-                </dd>
+              <div
+                key={item.term}
+                className="rounded-2xl border border-line bg-paper-raised p-5"
+              >
+                <h3 className="text-base text-ink">{item.term}</h3>
+                <p className="mt-2 text-sm leading-relaxed text-ink-soft">{item.detail}</p>
               </div>
             ))}
-          </dl>
+          </div>
         </section>
 
         <section className="border-t border-line py-10 sm:py-12">
@@ -129,29 +170,44 @@ export default function LandingPage() {
         </section>
 
         <section className="border-t border-line py-10 sm:py-12">
-          <h2 className="font-serif text-xl text-ink sm:text-2xl">The honest caveat</h2>
-          <p className="mt-4 max-w-prose leading-relaxed text-ink-soft">
-            Nothing is unbreakable. A device that is already compromised can read what you type
-            before we ever encrypt it, and we will never claim otherwise. What we do promise is
-            narrower and testable: a leak of our database or our storage does not expose what you
-            wrote. If you lose your phrase and your recovery kit, your memories stay locked —
-            permanently, including from us.
-          </p>
-          <Link
-            href="/privacy"
-            className="mt-5 inline-block text-sm text-ink underline underline-offset-4"
-          >
-            Read exactly how this works
-          </Link>
+          <div className="rounded-2xl border border-caution bg-caution-wash p-5 sm:p-7">
+            <p className="text-xs uppercase tracking-[0.14em] text-caution">The honest caveat</p>
+            <h2 className="mt-2 font-serif text-xl text-ink sm:text-2xl">
+              Nothing is unbreakable, and we will not claim otherwise
+            </h2>
+            <p className="mt-4 max-w-prose leading-relaxed text-ink">
+              A device that is already compromised can read what you type before we ever encrypt
+              it. We do not promise anonymity from someone with access to your device or your
+              network. What we promise is narrower and testable: a leak of our database or our
+              storage does not expose what you wrote. And if you lose your phrase and your
+              recovery kit, your memories stay locked permanently — including from us.
+            </p>
+            <Link
+              href="/privacy"
+              className="mt-5 inline-block text-sm text-ink underline underline-offset-4"
+            >
+              Read exactly how this works
+            </Link>
+          </div>
         </section>
 
         <section className="border-t border-line py-10 sm:py-12">
           <h2 className="font-serif text-xl text-ink sm:text-2xl">Optional: proof it is yours</h2>
           <p className="mt-4 max-w-prose leading-relaxed text-ink-soft">
             If you want it, you can anchor a memory on Solana — publishing a one-way hash that
-            proves it existed and is yours, without revealing a single word of it. Most people
-            will never need this, and everything above works without a wallet.
+            proves it existed and is yours, without revealing a single word of it. Every access to
+            a memory also writes a content-free receipt there, so what we say happened can be
+            checked against a record we cannot edit.
           </p>
+          <p className="mt-4 max-w-prose leading-relaxed text-ink-soft">
+            Most people will never need this, and everything above works without a wallet.
+          </p>
+          <Link
+            href="/verify"
+            className="mt-5 inline-block text-sm text-ink underline underline-offset-4"
+          >
+            Verify a proof yourself, without us
+          </Link>
         </section>
 
         <section className="border-t border-line py-10 sm:py-12">
