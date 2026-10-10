@@ -114,6 +114,44 @@ vercel --prod
 Security Policy's `connect-src`, and ciphertext uploads will be blocked by the
 browser without it.
 
+### The OMX Lab project, and the fork it builds from
+
+Production lives in the `omxdigitals-projects` Vercel team, project
+`prj_AYCIkg9kKZmQAoZFAe9uzJuvaflC`, region `sin1`. It is Git-connected to
+`github.com/omxdigitals/unsaid`.
+
+That connection is not the one to deploy through, because day-to-day work
+lands on a fork. `omxdigitals/unsaid` sat 16 commits behind while the fork
+carried the current code, and the account doing the work has `push: false` on
+the org repo — so pushing to make the Git trigger fire is not available.
+
+Deploy by overriding the source for one build instead. It keeps the project,
+its settings and its aliases, and only changes which repository the commit is
+read from:
+
+```
+POST /v13/deployments?teamId=team_DvLPMAWk1maVbC0KTzMkowKJ
+{
+  "name": "unsaid",
+  "project": "prj_AYCIkg9kKZmQAoZFAe9uzJuvaflC",
+  "target": "production",
+  "gitSource": { "type": "github", "org": "<fork owner>", "repo": "unsaid", "ref": "main" }
+}
+```
+
+Vercel builds from that repository's `main`, and the resulting deployment
+takes the project's production aliases as usual. Check `meta.githubCommitSha`
+in the response against `git rev-parse HEAD` before believing it shipped what
+you think it shipped.
+
+**Deployment protection has to stay off.** The project had
+`ssoProtection: all_except_custom_domains`, which returns a 302 to a Vercel
+login on every `*.vercel.app` URL. The deploy is green, the build is correct,
+and nobody outside the team can open it — the worst shape of broken, because
+it looks fine from the inside. `PATCH /v9/projects/<id>` with
+`{"ssoProtection": null}` clears it. Verify from outside the team, not from a
+browser that is already signed in to Vercel.
+
 ## What now refuses to deploy
 
 Three failures used to be possible and silent. They are now impossible.
