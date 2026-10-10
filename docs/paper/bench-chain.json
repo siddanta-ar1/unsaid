@@ -1,0 +1,38 @@
+{
+  "measured_at": "2026-10-09T07:18:22.628Z",
+  "cluster": "https://api.devnet.solana.com",
+  "program": "7nRKgRMiHfXg3fUXPRFdNX97BWfSKhNqvBaXZM5BLcHZ",
+  "recorder": "GjeqCLnDZbBr6QCvtBQ1MZjQxY4DujcKsDa2Edr5BoKg",
+  "n_requested": 100,
+  "n_confirmed": 98,
+  "failures": [
+    {
+      "index": 63,
+      "error": "WebSocket failed to connect"
+    },
+    {
+      "index": 64,
+      "error": "WebSocket failed to connect"
+    }
+  ],
+  "throttle_backoffs": 1,
+  "read_back_verified": 10,
+  "account_bytes": 212,
+  "confirmation_ms": {
+    "median": 1132,
+    "p95": 2823,
+    "min": 685,
+    "max": 4623
+  },
+  "cost_lamports": {
+    "per_receipt": 1767551.0204081633
+  },
+  "cost_sol_per_receipt": 0.0017675510204081632,
+  "total_spent_sol": 0.17322,
+  "wall_clock_s": 158.826,
+  "cost_per_user_month_sol": {
+    "5": 0.008837755102040816,
+    "20": 0.035351020408163264,
+    "60": 0.10605306122448979
+  }
+}

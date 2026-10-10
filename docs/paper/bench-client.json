@@ -1,0 +1,242 @@
+{
+  "measured_at": "2026-10-09T07:12:06.856Z",
+  "host": {
+    "cpu": "Intel(R) Core(TM) i5-5250U CPU @ 1.60GHz",
+    "cores": 4,
+    "memory_gb": 8,
+    "node": "v24.12.0",
+    "note": "Desktop class. Mobile figures still outstanding — no device harness yet."
+  },
+  "pbkdf2_iterations": 600000,
+  "key_derivation": {
+    "n": 20,
+    "median": 381.94515599999977,
+    "p95": 438.6530150000001,
+    "min": 371.7202240000006,
+    "max": 452.35705599999983
+  },
+  "unlock": {
+    "n": 20,
+    "median": 396.2440150000002,
+    "p95": 439.6052129999989,
+    "min": 364.53122599999915,
+    "max": 447.6188860000002
+  },
+  "vault_creation": {
+    "n": 5,
+    "median": 776.8347849999991,
+    "p95": 784.088713000001,
+    "min": 759.286798000001,
+    "max": 784.088713000001
+  },
+  "envelope": [
+    {
+      "label": "1 KB",
+      "bytes": 1024,
+      "seal": {
+        "n": 20,
+        "median": 0.5118509999992966,
+        "p95": 1.174301999999443,
+        "min": 0.34896200000002864,
+        "max": 1.5739510000021255
+      },
+      "open": {
+        "n": 20,
+        "median": 0.25705700000253273,
+        "p95": 0.5477559999999357,
+        "min": 0.17983599999934086,
+        "max": 0.5560459999978775
+      },
+      "seal_mb_s": 1.9079038626501503,
+      "open_mb_s": 3.7990115032478324,
+      "stored_bytes": 1242,
+      "overhead_bytes": 218,
+      "overhead_ratio": 1.212890625
+    },
+    {
+      "label": "10 KB",
+      "bytes": 10240,
+      "seal": {
+        "n": 20,
+        "median": 0.5229450000006182,
+        "p95": 1.1902139999983774,
+        "min": 0.31289599999945494,
+        "max": 2.192847000002075
+      },
+      "open": {
+        "n": 20,
+        "median": 0.25786599999992177,
+        "p95": 0.692481999998563,
+        "min": 0.16526099999828148,
+        "max": 1.2330980000006093
+      },
+      "seal_mb_s": 18.674286970883088,
+      "open_mb_s": 37.87092908721182,
+      "stored_bytes": 10458,
+      "overhead_bytes": 218,
+      "overhead_ratio": 1.0212890625
+    },
+    {
+      "label": "100 KB",
+      "bytes": 102400,
+      "seal": {
+        "n": 20,
+        "median": 0.9389589999991586,
+        "p95": 1.5346099999987928,
+        "min": 0.7303429999992659,
+        "max": 1.5826269999997749
+      },
+      "open": {
+        "n": 20,
+        "median": 0.4305010000025504,
+        "p95": 0.6834339999986696,
+        "min": 0.25997300000017276,
+        "max": 0.7207869999983814
+      },
+      "seal_mb_s": 104.00480745174978,
+      "open_mb_s": 226.8432593639073,
+      "stored_bytes": 102618,
+      "overhead_bytes": 218,
+      "overhead_ratio": 1.00212890625
+    },
+    {
+      "label": "1 MB",
+      "bytes": 1048576,
+      "seal": {
+        "n": 5,
+        "median": 6.265479999998206,
+        "p95": 11.418762000001152,
+        "min": 5.446598000002268,
+        "max": 11.418762000001152
+      },
+      "open": {
+        "n": 5,
+        "median": 2.9486870000000636,
+        "p95": 3.0881630000003497,
+        "min": 2.397138000000268,
+        "max": 3.0881630000003497
+      },
+      "seal_mb_s": 159.60469110112655,
+      "open_mb_s": 339.13399421504505,
+      "stored_bytes": 1048794,
+      "overhead_bytes": 218,
+      "overhead_ratio": 1.0002079010009766
+    },
+    {
+      "label": "10 MB",
+      "bytes": 10485760,
+      "seal": {
+        "n": 5,
+        "median": 83.44558699999834,
+        "p95": 117.16584800000055,
+        "min": 67.09641600000032,
+        "max": 117.16584800000055
+      },
+      "open": {
+        "n": 5,
+        "median": 37.935521999999764,
+        "p95": 109.63868999999977,
+        "min": 21.83663399999932,
+        "max": 109.63868999999977
+      },
+      "seal_mb_s": 119.8385721703917,
+      "open_mb_s": 263.6051772267708,
+      "stored_bytes": 10485978,
+      "overhead_bytes": 218,
+      "overhead_ratio": 1.0000207901000977
+    }
+  ],
+  "storage_overhead": {
+    "fixed_bytes": 218,
+    "note": "AES-GCM adds a 16-byte tag; the rest is the 12-byte IV, the wrapped 256-bit content key, and the JSON that names the algorithms. Constant, not proportional."
+  },
+  "account_budget": {
+    "transaction_limit": 1232,
+    "consent_receipt": {
+      "fields": [
+        [
+          "anchor discriminator",
+          8
+        ],
+        [
+          "recorder (Pubkey)",
+          32
+        ],
+        [
+          "receipt_id",
+          32
+        ],
+        [
+          "subject (vault digest)",
+          32
+        ],
+        [
+          "thought_id (domain-separated)",
+          32
+        ],
+        [
+          "attestation (enclave measurement)",
+          32
+        ],
+        [
+          "result_hash",
+          32
+        ],
+        [
+          "consent_version (u16)",
+          2
+        ],
+        [
+          "purpose (u8)",
+          1
+        ],
+        [
+          "created_at (i64)",
+          8
+        ],
+        [
+          "bump (u8)",
+          1
+        ]
+      ],
+      "total": 212
+    },
+    "thought_record": {
+      "fields": [
+        [
+          "anchor discriminator",
+          8
+        ],
+        [
+          "owner (Pubkey)",
+          32
+        ],
+        [
+          "thought_id",
+          32
+        ],
+        [
+          "commitment",
+          32
+        ],
+        [
+          "version / status / access_mode (u8 ×3)",
+          3
+        ],
+        [
+          "created_at (i64)",
+          8
+        ],
+        [
+          "updated_at (i64)",
+          8
+        ],
+        [
+          "bump (u8)",
+          1
+        ]
+      ],
+      "total": 124
+    }
+  }
+}

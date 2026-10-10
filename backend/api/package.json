@@ -10,7 +10,8 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run --root ../.. backend/api",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "tsx --env-file=.env src/db/migrate.ts"
+    "db:migrate": "tsx --env-file=.env src/db/migrate.ts",
+    "canary": "tsx --env-file=.env scripts/canary-sweep.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.122.0",
