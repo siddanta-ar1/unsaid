@@ -23,6 +23,8 @@ function loadDotEnv(path = '.env'): Record<string, string> {
   }
 }
 
+const COMPONENTS = 'apps/web/src/components/**/*.test.tsx';
+
 export default defineConfig({
   esbuild: { jsx: 'automatic' },
   resolve: {
@@ -32,11 +34,23 @@ export default defineConfig({
     // Node 20's global WebCrypto is the same SubtleCrypto implementation the
     // browser exposes, so crypto tests run identically in both.
     environment: 'node',
-    // Component tests need a DOM; everything else is faster without one.
-    environmentMatchGlobs: [['apps/web/src/components/**', 'jsdom']],
     setupFiles: ['./apps/web/vitest.setup.ts'],
-    include: ['**/src/**/*.test.ts', '**/src/**/*.test.tsx', '**/tests/**/*.test.ts'],
     exclude: ['**/node_modules/**', '**/dist/**'],
+    // Component tests need a DOM; everything else is faster without one.
+    projects: [
+      {
+        extends: true,
+        test: { name: 'dom', environment: 'jsdom', include: [COMPONENTS] },
+      },
+      {
+        extends: true,
+        test: {
+          name: 'node',
+          include: ['**/src/**/*.test.ts', '**/src/**/*.test.tsx', '**/tests/**/*.test.ts'],
+          exclude: [COMPONENTS],
+        },
+      },
+    ],
     /*
      * `.env` fills the gaps; it does not overrule the shell. Assigning it
      * wholesale meant `AI_PROVIDER=phala pnpm test` silently ran the stub —
