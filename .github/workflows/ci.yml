@@ -42,17 +42,21 @@ jobs:
       - name: Audit dependencies
         run: pnpm audit --audit-level moderate
 
-      # MinIO stands in for R2; both speak the same S3 API.
+      # RustFS stands in for R2; both speak the same S3 API. MinIO's images
+      # were withdrawn from every public registry, which is why this is not
+      # the MinIO the local compose file names. A new bucket is private.
       - name: Start object storage
+        env:
+          AWS_ACCESS_KEY_ID: unsaid_dev
+          AWS_SECRET_ACCESS_KEY: unsaid_local_dev
+          AWS_DEFAULT_REGION: us-east-1
         run: |
-          docker run -d --name minio -p 9010:9000 \
-            -e MINIO_ROOT_USER=unsaid_dev -e MINIO_ROOT_PASSWORD=unsaid_local_dev \
-            minio/minio:latest server /data
-          until curl -sf http://localhost:9010/minio/health/live; do sleep 1; done
-          docker run --rm --network host --entrypoint sh minio/mc:latest -c \
-            "mc alias set local http://localhost:9010 unsaid_dev unsaid_local_dev &&
-             mc mb --ignore-existing local/unsaid-private &&
-             mc anonymous set none local/unsaid-private"
+          docker run -d --name s3 -p 9010:9000 \
+            -e RUSTFS_ACCESS_KEY=unsaid_dev -e RUSTFS_SECRET_KEY=unsaid_local_dev \
+            rustfs/rustfs:1.0.1
+          until aws --endpoint-url http://localhost:9010 s3api list-buckets >/dev/null 2>&1; do sleep 1; done
+          aws --endpoint-url http://localhost:9010 s3api create-bucket --bucket unsaid-private
+          test "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:9010/unsaid-private/)" = 403
 
       - name: Configure environment
         run: |
